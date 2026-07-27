@@ -1,0 +1,285 @@
+package main
+
+import rl "vendor:raylib"
+import "core:math"
+import cs "core:slice" 
+
+
+// --- Konstanter ---
+SCREEN_WIDTH  :: 800
+SCREEN_HEIGHT :: 600
+BALL_RADIUS   :: 10.0
+PADDLE_WIDTH  :: 100.0
+PADDLE_HEIGHT :: 20.0
+
+// --- Datatyper ---
+Block :: struct {
+    pos: rl.Vector2,
+    size: rl.Vector2,
+    active: bool, // Avgör om blocket ska ritas/kollidera
+    color: rl.Color,
+}
+
+Game :: struct {
+    ball_pos:       rl.Vector2,
+    ball_speed_x:   f32,
+    ball_speed_y:   f32,
+    target_speed:   f32,
+    paddle_x:       f32,
+    paddle_y:       f32,
+    paddle_speed:   f32,
+    blip_low:    rl.Sound,
+    blip_mid:    rl.Sound,
+    blip_high:   rl.Sound,
+    blip_high2:   rl.Sound,
+    blocks: [dynamic]Block, // Lista med block
+}
+
+/////////////////////////////////////////////
+// 1. Uppdateringslogik (Input & Fysik)
+update_game :: proc(g: ^Game, dt: f32) {
+    // Paddel-rörelse
+    if rl.IsKeyDown(.LEFT)  { g.paddle_x -= g.paddle_speed * dt }
+    if rl.IsKeyDown(.RIGHT) { g.paddle_x += g.paddle_speed * dt }
+    
+    // Begränsa paddeln till skärmen
+    if g.paddle_x < 0 { g.paddle_x = 0 }
+    if g.paddle_x > f32(SCREEN_WIDTH) - PADDLE_WIDTH {
+        g.paddle_x = f32(SCREEN_WIDTH) - PADDLE_WIDTH
+    }
+     // Uppdatera bollens position med X och Y hastighet
+    g.ball_pos.x += g.ball_speed_x * dt
+    g.ball_pos.y += g.ball_speed_y * dt
+
+    /////////////////////////////////////////
+    // Kollision med Paddel
+    paddle_rect := rl.Rectangle{x = g.paddle_x, y = g.paddle_y, width = PADDLE_WIDTH, height = PADDLE_HEIGHT}
+    
+    if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, paddle_rect) {
+
+            rl.PlaySound(g.blip_low)
+
+        // ... inuti kollisionen med paddeln ...
+
+        // 1. Beräkna ny riktning baserat på träffpunkt
+        hit_offset := g.ball_pos.x - (g.paddle_x + PADDLE_WIDTH/2.0)
+        normalized_offset := hit_offset / (PADDLE_WIDTH/2.0)
+
+        g.ball_speed_y = -300.0 // Studsa uppåt med basfart
+        g.ball_speed_x = normalized_offset * 400.0 // Lägg till sidledshastighet
+
+        // 2. NORMALISERA (Detta fixar hastigheten automatiskt)
+        current_speed := math.sqrt(g.ball_speed_x*g.ball_speed_x + g.ball_speed_y*g.ball_speed_y)
+
+        if current_speed != 0.0 {
+            g.target_speed = f32(300.0) // Konstant totalfart
+            g.ball_speed_x = (g.ball_speed_x / current_speed) * g.target_speed
+            g.ball_speed_y = (g.ball_speed_y / current_speed) * g.target_speed
+        }   
+
+        // Se till att bollen bara studsar om den kommer uppifrån (för att undvika att den fastnar)
+        if g.ball_speed_y > 0 && g.ball_pos.y < g.paddle_y + PADDLE_HEIGHT {
+            
+            // 1. Beräkna var på paddeln bollen träffade (Relativt till mitten)
+            // Paddelns mitt-x
+            paddle_center_x := g.paddle_x + PADDLE_WIDTH / 2.0
+            
+            // Avståndet från mitten (-50 till +50 om paddeln är 100 bred)
+            hit_offset := g.ball_pos.x - paddle_center_x
+            
+            // Normalisera värdet till mellan -1.0 (vänster kant) och 1.0 (höger kant)
+            normalized_offset := hit_offset / (PADDLE_WIDTH / 2.0)
+
+            // 2. Sätt nya hastigheter
+            g.ball_speed_y *= -1.0 // Alltid studsa uppåt
+            
+            // Ändra X-hastigheten baserat på var den träffade
+            // T.ex. max 400 hastighet i sidled
+            g.ball_speed_x = normalized_offset * 400.0 
+
+            // Flytta ut bollen ur paddeln så den inte fastnar
+            g.ball_pos.y = g.paddle_y - BALL_RADIUS
+
+            // Spela ljudet vid kollision!
+        }
+
+    }
+
+    // Väggkollision (Vänster/Höger)
+    if g.ball_pos.x - BALL_RADIUS <= 0 {
+            rl.PlaySound(g.blip_mid)
+        g.ball_pos.x = BALL_RADIUS
+        g.ball_speed_x *= -1.0
+    } else if g.ball_pos.x + BALL_RADIUS >= f32(SCREEN_WIDTH) {
+        rl.PlaySound(g.blip_mid)
+        g.ball_pos.x = f32(SCREEN_WIDTH) - BALL_RADIUS
+        g.ball_speed_x *= -1.0
+    }
+
+
+   // studsa på taket
+    if g.ball_pos.y - BALL_RADIUS < f32(0.0) {
+            rl.PlaySound(g.blip_high)
+        g.ball_pos.y = f32(10) + BALL_RADIUS
+        g.ball_speed_y = 300.0  
+    }
+
+    // Reset vid golvet
+    if g.ball_pos.y - BALL_RADIUS > f32(SCREEN_HEIGHT) {
+            rl.PlaySound(g.blip_high2)
+        g.ball_pos.y = f32(SCREEN_HEIGHT) / 2.0
+        g.ball_pos.x = f32(SCREEN_WIDTH) / 2.0
+        g.ball_speed_x = 0.0      // Starta utan sidledshastighet
+        g.ball_speed_y = -300.0   // Starta uppåt (negativt Y är uppåt i Raylib? Nej, neråt är positivt. Starta neråt: 300.0)
+        // Korrigering: I Raylib är Y=0 högst upp. Positiv Y är neråt.
+        // Så för att bollen ska falla mot paddeln (som är längst ner) ska Y vara positiv.
+        g.ball_speed_y = 300.0
+    }
+    
+    //////////////////////////
+    // Gå igenom alla block
+    for &block in g.blocks {
+        if !block.active { continue } // Hoppa över förstörda block
+    
+        // Skapa en rektangel för blocket
+        block_rect := rl.Rectangle{
+            x = block.pos.x,
+            y = block.pos.y,
+            width = block.size.x,
+            height = block.size.y,
+        }
+    
+        // Kolla kollision boll och block
+        if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, block_rect) {
+            block.active = false // Markera som förstörd
+            
+            // Spela ljud och byt riktning (valfritt, likt paddeln)
+           // rl.SetSoundPitch(g.blip_high2, 1.2) // Lite annan ton för block
+            rl.PlaySound(g.blip_high2)
+            
+            // Enkel studs (vänd Y-hastighet)
+            g.ball_speed_y *= -1.0
+            
+            // Flytta ut bollen ur blocket för att undvika dubbelkollision
+            g.ball_pos.y = block.pos.y + block.size.y + BALL_RADIUS 
+        }
+    }
+
+    // 4. Rensa listan (Ta bort inaktiva block)
+    // Vi skapar en ny lista och kopierar bara över de som är aktiva
+    new_blocks: [dynamic]Block
+    level1: [dynamic]Block
+    for block in g.blocks {
+        if block.active {
+            append(&new_blocks, block)
+            append(&level1, block)
+        }
+    }
+
+    // Kollar om ALLA block är inaktiva
+    active_count: int = 0 // Starta på 0
+    for &block in g.blocks {
+        if block.active {
+            active_count += 1 // Räkna upp för varje block som ÄNNU lever
+            block.color = rl.Color{55, 55, 0, 255} 
+        }
+    }
+
+    // Om räknaren är 0, finns inga aktiva block kvar
+    if active_count == 0 {
+        delete(g.blocks)
+        g.blocks = level1
+        for &block in g.blocks {
+            block.active = true
+            block.color = rl.Color{55, 55, 0, 255} 
+        }
+    }
+
+    // Byt ut den gamla listan mot den nya och städa minnet
+    delete(g.blocks)
+    g.blocks = new_blocks
+}
+
+/////////////////////////////////////////////
+// 2. Ritlogik (Grafik)
+draw_game :: proc(g: ^Game) {
+    rl.BeginDrawing()
+    rl.ClearBackground(rl.SKYBLUE)
+    
+    // Rita Paddel
+    rl.DrawRectangleV({g.paddle_x, g.paddle_y}, {PADDLE_WIDTH, PADDLE_HEIGHT}, rl.BLACK)
+    
+    // Rita Boll
+    rl.DrawCircleV(g.ball_pos, BALL_RADIUS, rl.WHITE)
+
+    // Rita alla aktiva block
+    for block in g.blocks {
+        if block.active {
+            rl.DrawRectangleV(block.pos, block.size, block.color)
+        }
+    }
+    
+    rl.DrawText("Piltangenter för att röra paddeln", 10, 10, 20, rl.DARKGRAY)
+    rl.EndDrawing()
+}
+
+
+/////////////////////////////////////////////
+// 3. Main (Initiering & Loop)
+main :: proc() {
+    rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Odin Strukturerat")
+    defer rl.CloseWindow()
+
+    // Initiera ljudsystemet
+    rl.InitAudioDevice()
+    defer rl.CloseAudioDevice() // Stäng ljudet när programmet avslutas
+   
+    // Initiera spelstaten
+    game: Game = {
+        ball_pos     = { f32(SCREEN_WIDTH)/2.0,  f32(SCREEN_HEIGHT)/2.0},
+        ball_speed_x = 0.0,
+        ball_speed_y = 300.0,
+        target_speed = 300.0,
+        paddle_x     = f32(SCREEN_WIDTH)/2.0 - PADDLE_WIDTH/2.0,
+        paddle_y     = f32(SCREEN_HEIGHT) - 40.0,
+        paddle_speed = 500.0,
+        blip_low    = rl.LoadSound("blip.wav"),
+        blip_mid    = rl.LoadSound("blip.wav"),
+        blip_high   = rl.LoadSound("blip.wav"),
+        blip_high2  = rl.LoadSound("blip.wav"),
+    }
+
+    defer rl.UnloadSound(game.blip_low)
+    defer rl.UnloadSound(game.blip_mid)
+    defer rl.UnloadSound(game.blip_high)
+    defer rl.UnloadSound(game.blip_high2)
+
+    // Sätt pitchen EN gång vid start:
+    rl.SetSoundPitch(game.blip_low, 0.8)
+    rl.SetSoundPitch(game.blip_mid, 1.0)
+    rl.SetSoundPitch(game.blip_high, 1.5)
+    rl.SetSoundPitch(game.blip_high2, 2.0)
+
+    // Lägg till 5 block i en rad
+    for i in 0..<5 {
+        block := Block{
+            pos    = {100.0 + f32(i) * 110.0, 50.0},
+            size   = {100.0, 30.0},
+            active = true,
+            color  = rl.RED,
+        }
+        append(&game.blocks, block)
+    }
+
+    // släng loopen
+    should_close: bool = false
+
+    for !rl.WindowShouldClose() && !should_close {
+        dt := rl.GetFrameTime()
+        
+        update_game(&game, dt) // Uppdatera logik
+        draw_game(&game)       // Rita grafik
+        
+        if rl.IsKeyDown(.Q) { should_close = true }
+    }
+}   
