@@ -36,7 +36,7 @@ Game :: struct {
 }
 
 /////////////////////////////////////////////
-// 1. Uppdateringslogik (Input & Fysik)
+// --- Uppdateringslogik (Input & Fysik) ---
 update_game :: proc(g: ^Game, dt: f32) {
     // Paddel-rörelse
     if rl.IsKeyDown(.LEFT)  { g.paddle_x -= g.paddle_speed * dt }
@@ -47,19 +47,18 @@ update_game :: proc(g: ^Game, dt: f32) {
     if g.paddle_x > f32(SCREEN_WIDTH) - PADDLE_WIDTH {
         g.paddle_x = f32(SCREEN_WIDTH) - PADDLE_WIDTH
     }
-     // Uppdatera bollens position med X och Y hastighet
+
+    // Uppdatera bollens position med X och Y hastighet
     g.ball_pos.x += g.ball_speed_x * dt
     g.ball_pos.y += g.ball_speed_y * dt
 
     /////////////////////////////////////////
-    // Kollision med Paddel
+    // -- Kollision med Paddel --
     paddle_rect := rl.Rectangle{x = g.paddle_x, y = g.paddle_y, width = PADDLE_WIDTH, height = PADDLE_HEIGHT}
     
     if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, paddle_rect) {
-
-            rl.PlaySound(g.blip_low)
-
-        // ... inuti kollisionen med paddeln ...
+        // spela ljud vid kollision
+        rl.PlaySound(g.blip_low)
 
         // 1. Beräkna ny riktning baserat på träffpunkt
         hit_offset := g.ball_pos.x - (g.paddle_x + PADDLE_WIDTH/2.0)
@@ -99,32 +98,29 @@ update_game :: proc(g: ^Game, dt: f32) {
 
             // Flytta ut bollen ur paddeln så den inte fastnar
             g.ball_pos.y = g.paddle_y - BALL_RADIUS
-
-            // Spela ljudet vid kollision!
         }
-
     }
 
-    // Väggkollision (Vänster/Höger)
+    //  -- Väggkollision (Vänster/Höger) --
     if g.ball_pos.x - BALL_RADIUS <= 0 {
             rl.PlaySound(g.blip_mid)
         g.ball_pos.x = BALL_RADIUS
         g.ball_speed_x *= -1.0
     } else if g.ball_pos.x + BALL_RADIUS >= f32(SCREEN_WIDTH) {
-        rl.PlaySound(g.blip_mid)
+            rl.PlaySound(g.blip_mid)
         g.ball_pos.x = f32(SCREEN_WIDTH) - BALL_RADIUS
         g.ball_speed_x *= -1.0
     }
 
 
-   // studsa på taket
+   // -- studsa på taket --
     if g.ball_pos.y - BALL_RADIUS < f32(0.0) {
             rl.PlaySound(g.blip_high)
         g.ball_pos.y = f32(10) + BALL_RADIUS
         g.ball_speed_y = 300.0  
     }
 
-    // Reset vid golvet
+    // -- Reset vid golvet --
     if g.ball_pos.y - BALL_RADIUS > f32(SCREEN_HEIGHT) {
             rl.PlaySound(g.blip_high2)
         g.ball_pos.y = f32(SCREEN_HEIGHT) / 2.0
@@ -137,7 +133,7 @@ update_game :: proc(g: ^Game, dt: f32) {
     }
     
     //////////////////////////
-    // Gå igenom alla block
+    // -- Gå igenom alla block --
     for &block in g.blocks {
         if !block.active { continue } // Hoppa över förstörda block
     
@@ -154,7 +150,7 @@ update_game :: proc(g: ^Game, dt: f32) {
             block.active = false // Markera som förstörd
             
             // Spela ljud och byt riktning (valfritt, likt paddeln)
-           // rl.SetSoundPitch(g.blip_high2, 1.2) // Lite annan ton för block
+            // rl.SetSoundPitch(g.blip_high2, 1.2) // Lite annan ton för block
             rl.PlaySound(g.blip_high2)
             
             // Enkel studs (vänd Y-hastighet)
@@ -185,6 +181,7 @@ update_game :: proc(g: ^Game, dt: f32) {
         }
     }
 
+    // TEST 
     // Om räknaren är 0, finns inga aktiva block kvar
     if active_count == 0 {
         delete(g.blocks)
@@ -199,6 +196,7 @@ update_game :: proc(g: ^Game, dt: f32) {
     delete(g.blocks)
     g.blocks = new_blocks
 }
+
 
 /////////////////////////////////////////////
 // 2. Ritlogik (Grafik)
@@ -271,7 +269,7 @@ main :: proc() {
         append(&game.blocks, block)
     }
 
-    // släng loopen
+    // avsluta game loop
     should_close: bool = false
 
     for !rl.WindowShouldClose() && !should_close {
@@ -280,6 +278,6 @@ main :: proc() {
         update_game(&game, dt) // Uppdatera logik
         draw_game(&game)       // Rita grafik
         
-        if rl.IsKeyDown(.Q) { should_close = true }
+        if rl.IsKeyDown(.Q) { should_close = true } // Stäng ner med q
     }
 }   
