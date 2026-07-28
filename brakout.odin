@@ -241,7 +241,7 @@ main :: proc() {
     rl.SetSoundPitch(game.blip_high2, 2.0)
 
     // Lägg till 7 block per rad, med olika färger
-    for i in 0..<2 {
+    for i in 0..<28 {
         block := Block{
             pos    = {50.0 + f32(i) * 102.0, 50.0},
             size   = {90.0, 30.0},
@@ -294,7 +294,14 @@ set_new_level :: proc(g: ^Game, lv: int) {
     }
     if lv == 2 {
         for &b in g.blocks_level_2 {
-            b.color = rl.BLACK
+            // Generera slumpmässiga R, G, B värden (0-255)
+            r_val := u8(rl.GetRandomValue(0, 255))
+            g_val := u8(rl.GetRandomValue(0, 255))
+            b_val := u8(rl.GetRandomValue(0, 255))
+        
+            // Sätt färgen manuellt (Alpha sätts till 255 för heltäckande)
+            b.color = rl.Color{r_val, g_val, b_val, 255}
+        
             append(&g.blocks, b)
         }
     }
