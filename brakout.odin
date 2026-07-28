@@ -12,6 +12,7 @@ BALL_RADIUS   :: 10.0
 PADDLE_WIDTH  :: 100.0
 PADDLE_HEIGHT :: 20.0
 
+
 // --- Datatyper ---
 Block :: struct {
     pos: rl.Vector2,
@@ -130,6 +131,11 @@ update_game :: proc(g: ^Game, dt: f32) {
         // Korrigering: I Raylib är Y=0 högst upp. Positiv Y är neråt.
         // Så för att bollen ska falla mot paddeln (som är längst ner) ska Y vara positiv.
         g.ball_speed_y = 300.0
+        
+        for &block in g.blocks {
+            block.active = true
+            block.color = rl.Color{55, 155, 0, 255} 
+        }
     }
     
     //////////////////////////
@@ -144,13 +150,11 @@ update_game :: proc(g: ^Game, dt: f32) {
             width = block.size.x,
             height = block.size.y,
         }
-    
-        // Kolla kollision boll och block
+        
+        // kollision boll och block
         if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, block_rect) {
             block.active = false // Markera som förstörd
             
-            // Spela ljud och byt riktning (valfritt, likt paddeln)
-            // rl.SetSoundPitch(g.blip_high2, 1.2) // Lite annan ton för block
             rl.PlaySound(g.blip_high2)
             
             // Enkel studs (vänd Y-hastighet)
@@ -166,17 +170,18 @@ update_game :: proc(g: ^Game, dt: f32) {
     new_blocks: [dynamic]Block
     level1: [dynamic]Block
     for block in g.blocks {
+         //   append(&level1, block)
         if block.active {
             append(&new_blocks, block)
-            append(&level1, block)
         }
     }
-
+    counter := f32(0)
+    counter += 1
     // Kollar om ALLA block är inaktiva
     active_count: int = 0 // Starta på 0
     for &block in g.blocks {
         if block.active {
-            active_count += 1 // Räkna upp för varje block som ÄNNU lever
+            active_count = 1 // Räkna upp för varje block som ÄNNU lever
             block.color = rl.Color{55, 55, 0, 255} 
         }
     }
@@ -184,11 +189,11 @@ update_game :: proc(g: ^Game, dt: f32) {
     // TEST 
     // Om räknaren är 0, finns inga aktiva block kvar
     if active_count == 0 {
-        delete(g.blocks)
+        // delete(g.blocks)
         g.blocks = level1
         for &block in g.blocks {
             block.active = true
-            block.color = rl.Color{55, 55, 0, 255} 
+            block.color = rl.Color{0, 55, 150, 255} 
         }
     }
 
@@ -258,18 +263,31 @@ main :: proc() {
     rl.SetSoundPitch(game.blip_high, 1.5)
     rl.SetSoundPitch(game.blip_high2, 2.0)
 
-    // Lägg till 5 block i en rad
-    for i in 0..<5 {
+    // Lägg till 7 block per rad, med olika färger
+    for i in 0..<28 {
         block := Block{
-            pos    = {100.0 + f32(i) * 110.0, 50.0},
-            size   = {100.0, 30.0},
+            pos    = {50.0 + f32(i) * 102.0, 50.0},
+            size   = {90.0, 30.0},
             active = true,
-            color  = rl.RED,
+            color  = rl.YELLOW,
         }
+        if i+1 > 7{
+            block.pos = {50.0 + f32(i-7) * 102.0, 100.0}
+            block.color = rl.BLUE
+        }
+        if i+1 > 14{
+            block.pos = {50.0 + f32(i-14) * 102.0, 150.0}
+            block.color = rl.PURPLE
+        }
+        if i+1 > 21{
+            block.pos = {50.0 + f32(i-21) * 102.0, 200.0}
+            block.color = rl.RED
+        }
+
         append(&game.blocks, block)
     }
 
-    // avsluta game loop
+    // Sett flagga: avsluta game loop
     should_close: bool = false
 
     for !rl.WindowShouldClose() && !should_close {
