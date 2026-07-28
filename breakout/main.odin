@@ -190,13 +190,13 @@ draw_game :: proc(g: ^Game) {
     rl.BeginDrawing()
     rl.ClearBackground(rl.SKYBLUE)
 
-    rl.DrawTextureEx(
-        g.bg_image, 
-        {0, 0}, 
-        0.0, // Rotation
-        f32(rl.GetScreenWidth()) / f32(g.bg_image.width), // Skala X för att fylla bredden
-        rl.WHITE
-    )
+//    rl.DrawTextureEx(
+//        g.bg_image, 
+//        {0, 0}, 
+//        0.0, // Rotation
+//        f32(rl.GetScreenWidth()) / f32(g.bg_image.width), // Skala X för att fylla bredden
+//        rl.WHITE
+//    )
     
     // -- Rita Paddel --
     rect_pad := rl.Rectangle{g.paddle_x, g.paddle_y, PADDLE_WIDTH, PADDLE_HEIGHT}
@@ -233,13 +233,13 @@ main :: proc() {
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Odin Breakout")
     defer rl.CloseWindow()
 
-    bg_texture := rl.LoadTexture("val.gif")
-    // Kontrollera att bilden laddades korrekt
-    if bg_texture.id == 0 {
-        fmt.println("Fel: Kunde inte ladda bakgrundsbilden!")
-        return
-    }
-    defer rl.UnloadTexture(bg_texture)
+//    bg_texture := rl.LoadTexture("val.gif")
+//    // Kontrollera att bilden laddades korrekt
+//    if bg_texture.id == 0 {
+//        fmt.println("Fel: Kunde inte ladda bakgrundsbilden!")
+//        return
+//    }
+//    defer rl.UnloadTexture(bg_texture)
 
     // Initiera ljudsystemet
     rl.InitAudioDevice()
@@ -258,7 +258,7 @@ main :: proc() {
         blip_mid    = rl.LoadSound("blip.wav"),
         blip_high   = rl.LoadSound("blip.wav"),
         blip_high2  = rl.LoadSound("blip.wav"),
-        bg_image    = bg_texture
+        //bg_image    = bg_texture
     }
 
     defer rl.UnloadSound(game.blip_low)
