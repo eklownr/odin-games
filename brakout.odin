@@ -34,6 +34,8 @@ Game :: struct {
     blip_high:   rl.Sound,
     blip_high2:   rl.Sound,
     blocks: [dynamic]Block, // Lista med block
+    blocks_level_1: [dynamic]Block, // Lista med block
+    blocks_level_2: [dynamic]Block, // Lista med block
 }
 
 /////////////////////////////////////////////
@@ -128,16 +130,19 @@ update_game :: proc(g: ^Game, dt: f32) {
         g.ball_pos.x = f32(SCREEN_WIDTH) / 2.0
         g.ball_speed_x = 0.0      // Starta utan sidledshastighet
         g.ball_speed_y = -300.0   // Starta uppåt (negativt Y är uppåt i Raylib? Nej, neråt är positivt. Starta neråt: 300.0)
-        // Korrigering: I Raylib är Y=0 högst upp. Positiv Y är neråt.
-        // Så för att bollen ska falla mot paddeln (som är längst ner) ska Y vara positiv.
         g.ball_speed_y = 300.0
         
-        for &block in g.blocks {
-            block.active = true
-            block.color = rl.Color{55, 155, 0, 255} 
-        }
+        set_new_level(g)
+//        // reset game blocks, Töm den nuvarande listan först
+//        resize(&g.blocks, 0)
+//
+//        // Kopiera alla element från level_1 till blocks
+//        for b in g.blocks_level_1 {
+//            append(&g.blocks, b)
+//        }
     }
     
+
     //////////////////////////
     // -- Gå igenom alla block --
     for &block in g.blocks {
@@ -168,32 +173,9 @@ update_game :: proc(g: ^Game, dt: f32) {
     // 4. Rensa listan (Ta bort inaktiva block)
     // Vi skapar en ny lista och kopierar bara över de som är aktiva
     new_blocks: [dynamic]Block
-    level1: [dynamic]Block
     for block in g.blocks {
-         //   append(&level1, block)
         if block.active {
             append(&new_blocks, block)
-        }
-    }
-    counter := f32(0)
-    counter += 1
-    // Kollar om ALLA block är inaktiva
-    active_count: int = 0 // Starta på 0
-    for &block in g.blocks {
-        if block.active {
-            active_count = 1 // Räkna upp för varje block som ÄNNU lever
-            block.color = rl.Color{55, 55, 0, 255} 
-        }
-    }
-
-    // TEST 
-    // Om räknaren är 0, finns inga aktiva block kvar
-    if active_count == 0 {
-        // delete(g.blocks)
-        g.blocks = level1
-        for &block in g.blocks {
-            block.active = true
-            block.color = rl.Color{0, 55, 150, 255} 
         }
     }
 
@@ -285,6 +267,7 @@ main :: proc() {
         }
 
         append(&game.blocks, block)
+        append(&game.blocks_level_1, block)
     }
 
     // Sett flagga: avsluta game loop
@@ -299,3 +282,15 @@ main :: proc() {
         if rl.IsKeyDown(.Q) { should_close = true } // Stäng ner med q
     }
 }   
+
+//////////////////////////////////////////
+// -- Set new Level --
+set_new_level :: proc(g: ^Game) {
+    // reset game blocks, Töm den nuvarande listan först
+    resize(&g.blocks, 0)
+
+    // Kopiera alla element från level_1 till blocks
+    for b in g.blocks_level_1 {
+        append(&g.blocks, b)
+    }
+}
