@@ -2,7 +2,7 @@ package main
 
 import rl "vendor:raylib"
 import "core:math"
-import cs "core:slice" 
+import "core:fmt"
 
 
 // --- Konstanter ---
@@ -22,6 +22,8 @@ Block :: struct {
 }
 
 Game :: struct {
+    score_text:     cstring,
+    score:          int,
     ball_pos:       rl.Vector2,
     ball_speed_x:   f32,
     ball_speed_y:   f32,
@@ -129,6 +131,7 @@ update_game :: proc(g: ^Game, dt: f32) {
         // Restart level 1
         set_new_level(g, 1)
         reset_ball(g)
+        g.score = 0
     }
     
 
@@ -199,7 +202,10 @@ draw_game :: proc(g: ^Game) {
         }
     }
     
-    rl.DrawText("Piltangenter för att röra paddeln", 10, 10, 20, rl.DARKGRAY)
+    g.score += 1
+    score_text := fmt.ctprintf("Score: %d", g.score)
+
+    rl.DrawText(score_text, 10, 10, 24, rl.DARKGRAY)
     rl.EndDrawing()
 }
 
@@ -207,7 +213,7 @@ draw_game :: proc(g: ^Game) {
 /////////////////////////////////////////////
 // 3. Main (Initiering & Loop)
 main :: proc() {
-    rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Odin Strukturerat")
+    rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Odin Breakout")
     defer rl.CloseWindow()
 
     // Initiera ljudsystemet
