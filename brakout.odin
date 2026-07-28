@@ -125,14 +125,10 @@ update_game :: proc(g: ^Game, dt: f32) {
 
     // -- Reset vid golvet --
     if g.ball_pos.y - BALL_RADIUS > f32(SCREEN_HEIGHT) {
-            rl.PlaySound(g.blip_high2)
-        g.ball_pos.y = f32(SCREEN_HEIGHT) / 2.0
-        g.ball_pos.x = f32(SCREEN_WIDTH) / 2.0
-        g.ball_speed_x = 0.0      // Starta utan sidledshastighet
-        g.ball_speed_y = 300.0
-        
+        rl.PlaySound(g.blip_high2)
         // Restart level 1
         set_new_level(g, 1)
+        reset_ball(g)
     }
     
 
@@ -176,9 +172,10 @@ update_game :: proc(g: ^Game, dt: f32) {
     delete(g.blocks)
     g.blocks = new_blocks
 
-    // om det inte finns några block starta level2
+    // Om det inte finns några block, starta level2
     if len(g.blocks) == 0 {
         set_new_level(g, 1)
+        reset_ball(g)
     }
 }
 
@@ -291,4 +288,14 @@ set_new_level :: proc(g: ^Game, lv: int) {
     for b in g.blocks_level_1 {
         append(&g.blocks, b)
     }
+}
+
+
+// -- reset ball --
+reset_ball :: proc(g: ^Game) {
+
+    g.ball_pos.y = f32(SCREEN_HEIGHT) / 2.0
+    g.ball_pos.x = f32(SCREEN_WIDTH) / 2.0
+    g.ball_speed_x = 0.0      // Starta utan sidledshastighet
+    g.ball_speed_y = 300.0
 }
