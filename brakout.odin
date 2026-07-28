@@ -151,8 +151,8 @@ update_game :: proc(g: ^Game, dt: f32) {
         // kollision boll och block
         if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, block_rect) {
             block.active = false // Markera som förstörd
-            
-            rl.PlaySound(g.blip_high2)
+            g.score += 1 // öka scor med ett vid kollision
+            rl.PlaySound(g.blip_high2) // spela blip-ljud
             
             // Enkel studs (vänd Y-hastighet)
             g.ball_speed_y *= -1.0
@@ -202,9 +202,7 @@ draw_game :: proc(g: ^Game) {
         }
     }
     
-    g.score += 1
     score_text := fmt.ctprintf("Score: %d", g.score)
-
     rl.DrawText(score_text, 10, 10, 24, rl.DARKGRAY)
     rl.EndDrawing()
 }
