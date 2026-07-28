@@ -129,17 +129,10 @@ update_game :: proc(g: ^Game, dt: f32) {
         g.ball_pos.y = f32(SCREEN_HEIGHT) / 2.0
         g.ball_pos.x = f32(SCREEN_WIDTH) / 2.0
         g.ball_speed_x = 0.0      // Starta utan sidledshastighet
-        g.ball_speed_y = -300.0   // Starta uppåt (negativt Y är uppåt i Raylib? Nej, neråt är positivt. Starta neråt: 300.0)
         g.ball_speed_y = 300.0
         
-        set_new_level(g)
-//        // reset game blocks, Töm den nuvarande listan först
-//        resize(&g.blocks, 0)
-//
-//        // Kopiera alla element från level_1 till blocks
-//        for b in g.blocks_level_1 {
-//            append(&g.blocks, b)
-//        }
+        // Restart level 1
+        set_new_level(g, 1)
     }
     
 
@@ -182,6 +175,11 @@ update_game :: proc(g: ^Game, dt: f32) {
     // Byt ut den gamla listan mot den nya och städa minnet
     delete(g.blocks)
     g.blocks = new_blocks
+
+    // om det inte finns några block starta level2
+    if len(g.blocks) == 0 {
+        set_new_level(g, 1)
+    }
 }
 
 
@@ -285,7 +283,7 @@ main :: proc() {
 
 //////////////////////////////////////////
 // -- Set new Level --
-set_new_level :: proc(g: ^Game) {
+set_new_level :: proc(g: ^Game, lv: int) {
     // reset game blocks, Töm den nuvarande listan först
     resize(&g.blocks, 0)
 
