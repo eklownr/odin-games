@@ -189,10 +189,14 @@ draw_game :: proc(g: ^Game) {
     rl.BeginDrawing()
     rl.ClearBackground(rl.SKYBLUE)
     
-    // Rita Paddel
-    rl.DrawRectangleV({g.paddle_x, g.paddle_y}, {PADDLE_WIDTH, PADDLE_HEIGHT}, rl.BLACK)
+    // -- Rita Paddel --
+    rect_pad := rl.Rectangle{g.paddle_x, g.paddle_y, PADDLE_WIDTH, PADDLE_HEIGHT}
+    rl.DrawRectangleRounded(rect_pad, 0.6, 0, rl.BLACK)
+    rect_pad2 := rl.Rectangle{g.paddle_x+5, g.paddle_y+5, PADDLE_WIDTH-10, PADDLE_HEIGHT-10}
+    rl.DrawRectangleRounded(rect_pad2, 0.6, 0, rl.GREEN)
     
     // Rita Boll
+    rl.DrawCircleV(g.ball_pos, BALL_RADIUS+5, rl.BLACK)
     rl.DrawCircleV(g.ball_pos, BALL_RADIUS, rl.WHITE)
 
     // Rita alla aktiva block
