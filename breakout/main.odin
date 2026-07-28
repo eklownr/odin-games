@@ -22,6 +22,7 @@ Block :: struct {
 }
 
 Game :: struct {
+    bg_image:       rl.Texture2D,
     score_text:     cstring,
     score:          int,
     ball_pos:       rl.Vector2,
@@ -31,11 +32,11 @@ Game :: struct {
     paddle_x:       f32,
     paddle_y:       f32,
     paddle_speed:   f32,
-    blip_low:    rl.Sound,
-    blip_mid:    rl.Sound,
-    blip_high:   rl.Sound,
-    blip_high2:   rl.Sound,
-    blocks: [dynamic]Block, // Lista med block
+    blip_low:       rl.Sound,
+    blip_mid:       rl.Sound,
+    blip_high:      rl.Sound,
+    blip_high2:     rl.Sound,
+    blocks:         [dynamic]Block, // Lista med block
     blocks_level_1: [dynamic]Block, // Lista med block
     blocks_level_2: [dynamic]Block, // Lista med block
 }
@@ -188,6 +189,14 @@ update_game :: proc(g: ^Game, dt: f32) {
 draw_game :: proc(g: ^Game) {
     rl.BeginDrawing()
     rl.ClearBackground(rl.SKYBLUE)
+
+    rl.DrawTextureEx(
+        g.bg_image, 
+        {0, 0}, 
+        0.0, // Rotation
+        f32(rl.GetScreenWidth()) / f32(g.bg_image.width), // Skala X för att fylla bredden
+        rl.WHITE
+    )
     
     // -- Rita Paddel --
     rect_pad := rl.Rectangle{g.paddle_x, g.paddle_y, PADDLE_WIDTH, PADDLE_HEIGHT}
@@ -224,6 +233,14 @@ main :: proc() {
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Odin Breakout")
     defer rl.CloseWindow()
 
+    bg_texture := rl.LoadTexture("val.gif")
+    // Kontrollera att bilden laddades korrekt
+    if bg_texture.id == 0 {
+        fmt.println("Fel: Kunde inte ladda bakgrundsbilden!")
+        return
+    }
+    defer rl.UnloadTexture(bg_texture)
+
     // Initiera ljudsystemet
     rl.InitAudioDevice()
     defer rl.CloseAudioDevice() // Stäng ljudet när programmet avslutas
@@ -241,6 +258,7 @@ main :: proc() {
         blip_mid    = rl.LoadSound("blip.wav"),
         blip_high   = rl.LoadSound("blip.wav"),
         blip_high2  = rl.LoadSound("blip.wav"),
+        bg_image    = bg_texture
     }
 
     defer rl.UnloadSound(game.blip_low)
