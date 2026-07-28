@@ -63,7 +63,7 @@ update_game :: proc(g: ^Game, dt: f32) {
     
     if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, paddle_rect) {
         // spela ljud vid kollision
-        rl.PlaySound(g.blip_low)
+        rl.PlaySound(g.blip_high)
 
         // 1. Beräkna ny riktning baserat på träffpunkt
         hit_offset := g.ball_pos.x - (g.paddle_x + PADDLE_WIDTH/2.0)
@@ -120,7 +120,7 @@ update_game :: proc(g: ^Game, dt: f32) {
 
    // -- studsa på taket --
     if g.ball_pos.y - BALL_RADIUS < f32(0.0) {
-            rl.PlaySound(g.blip_high)
+        rl.PlaySound(g.blip_high)
         g.ball_pos.y = f32(10) + BALL_RADIUS
         g.ball_speed_y = 300.0  
     }
@@ -152,7 +152,7 @@ update_game :: proc(g: ^Game, dt: f32) {
         if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, block_rect) {
             block.active = false // Markera som förstörd
             g.score += 1 // öka scor med ett vid kollision
-            rl.PlaySound(g.blip_high2) // spela blip-ljud
+            random_blip(g) // random blip-ljud
             
             // Enkel studs (vänd Y-hastighet)
             g.ball_speed_y *= -1.0
@@ -198,7 +198,13 @@ draw_game :: proc(g: ^Game) {
     // Rita alla aktiva block
     for block in g.blocks {
         if block.active {
-            rl.DrawRectangleV(block.pos, block.size, block.color)
+            // stor svart rektangel (skapar svart kant)
+            rect := rl.Rectangle{block.pos.x-5, block.pos.y-5, block.size.x+10, block.size.y+10}
+            rl.DrawRectangleRounded(rect, 0.2, 0, rl.BLACK)
+            // mitten med färg
+            rect2 := rl.Rectangle{block.pos.x, block.pos.y, block.size.x, block.size.y}
+            rl.DrawRectangleRounded(rect2, 0.2, 0, block.color)
+ 
         }
     }
     
@@ -319,4 +325,13 @@ reset_ball :: proc(g: ^Game) {
     g.ball_pos.x = f32(SCREEN_WIDTH) / 2.0
     g.ball_speed_x = 0.0      // Starta utan sidledshastighet
     g.ball_speed_y = 300.0
+}
+
+// -- play random blip sound --
+random_blip :: proc(g: ^Game) {
+    // Metod: Slumpa ett heltal mellan 0 och 2200, dividera med 1000.0, lägg till 0.8
+    rand_int := rl.GetRandomValue(0, 2200) // 0 till 2200
+    rand_sound := 0.8 + f32(rand_int) / 1000.0 // 0.8 - 3.0
+    rl.SetSoundPitch(g.blip_low, rand_sound)
+    rl.PlaySound(g.blip_low)
 }
