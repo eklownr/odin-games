@@ -174,7 +174,7 @@ update_game :: proc(g: ^Game, dt: f32) {
 
     // Om det inte finns några block, starta level2
     if len(g.blocks) == 0 {
-        set_new_level(g, 1)
+        set_new_level(g, 2)
         reset_ball(g)
     }
 }
@@ -241,7 +241,7 @@ main :: proc() {
     rl.SetSoundPitch(game.blip_high2, 2.0)
 
     // Lägg till 7 block per rad, med olika färger
-    for i in 0..<28 {
+    for i in 0..<2 {
         block := Block{
             pos    = {50.0 + f32(i) * 102.0, 50.0},
             size   = {90.0, 30.0},
@@ -263,7 +263,9 @@ main :: proc() {
 
         append(&game.blocks, block)
         append(&game.blocks_level_1, block)
+        append(&game.blocks_level_2, block)
     }
+
 
     // Sett flagga: avsluta game loop
     should_close: bool = false
@@ -285,8 +287,16 @@ set_new_level :: proc(g: ^Game, lv: int) {
     resize(&g.blocks, 0)
 
     // Kopiera alla element från level_1 till blocks
-    for b in g.blocks_level_1 {
-        append(&g.blocks, b)
+    if lv == 1 {
+        for b in g.blocks_level_1 {
+            append(&g.blocks, b)
+        }
+    }
+    if lv == 2 {
+        for &b in g.blocks_level_2 {
+            b.color = rl.BLACK
+            append(&g.blocks, b)
+        }
     }
 }
 
