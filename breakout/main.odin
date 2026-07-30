@@ -325,6 +325,7 @@ main :: proc() {
 set_new_level :: proc(g: ^Game, lv: int) {
     // reset game blocks, Töm den nuvarande listan först
     resize(&g.blocks, 0)
+    g.target_speed = 300 // reset ball speed
 
     // Kopiera alla element från level_1 till blocks
     if lv == 1 {
