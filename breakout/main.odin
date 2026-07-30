@@ -77,7 +77,7 @@ update_game :: proc(g: ^Game, dt: f32) {
         current_speed := math.sqrt(g.ball_speed_x*g.ball_speed_x + g.ball_speed_y*g.ball_speed_y)
 
         if current_speed != 0.0 {
-            g.target_speed = f32(300.0) // Konstant totalfart
+            //g.target_speed = f32(300) // Konstant totalfart
             g.ball_speed_x = (g.ball_speed_x / current_speed) * g.target_speed
             g.ball_speed_y = (g.ball_speed_y / current_speed) * g.target_speed
         }   
@@ -118,8 +118,7 @@ update_game :: proc(g: ^Game, dt: f32) {
         g.ball_speed_x *= -1.0
     }
 
-
-   // -- studsa på taket --
+   // -- Studsa på taket --
     if g.ball_pos.y - BALL_RADIUS < f32(0.0) {
         rl.PlaySound(g.blip_high)
         g.ball_pos.y = f32(10) + BALL_RADIUS
@@ -133,6 +132,7 @@ update_game :: proc(g: ^Game, dt: f32) {
         set_new_level(g, 1)
         reset_ball(g)
         g.score = 0
+        g.target_speed = 300
     }
     
 
@@ -154,17 +154,17 @@ update_game :: proc(g: ^Game, dt: f32) {
             block.active = false // Markera som förstörd
             g.score += 1 // öka scor med ett vid kollision
             random_blip(g) // random blip-ljud
-            
+            g.target_speed += 10 // öka total hastighet på bollen varje träff av block
             // Enkel studs (vänd Y-hastighet)
             g.ball_speed_y *= -1.0
             
+            // FIXA Kommer bollen upp ifrån eller under ifrån?
             // Flytta ut bollen ur blocket för att undvika dubbelkollision
             g.ball_pos.y = block.pos.y + block.size.y + BALL_RADIUS 
         }
     }
 
-    // 4. Rensa listan (Ta bort inaktiva block)
-    // Vi skapar en ny lista och kopierar bara över de som är aktiva
+    // Rensa listan (Ta bort inaktiva block)
     new_blocks: [dynamic]Block
     for block in g.blocks {
         if block.active {
@@ -176,6 +176,7 @@ update_game :: proc(g: ^Game, dt: f32) {
     delete(g.blocks)
     g.blocks = new_blocks
 
+    // -- Ny level --
     // Om det inte finns några block, starta level2
     if len(g.blocks) == 0 {
         set_new_level(g, 2)
@@ -185,11 +186,12 @@ update_game :: proc(g: ^Game, dt: f32) {
 
 
 /////////////////////////////////////////////
-// 2. Ritlogik (Grafik)
+// -- Ritlogik (Grafik) --
 draw_game :: proc(g: ^Game) {
     rl.BeginDrawing()
     rl.ClearBackground(rl.SKYBLUE)
 
+      // Add background picture
 //    rl.DrawTextureEx(
 //        g.bg_image, 
 //        {0, 0}, 
@@ -293,9 +295,15 @@ main :: proc() {
             block.color = rl.RED
         }
 
-        append(&game.blocks, block)
         append(&game.blocks_level_1, block)
         append(&game.blocks_level_2, block)
+
+        // remove blocks to make a triangel
+        if i==7 || i==13 || i==14 || i==15 || i==19 || i==20 || i==21 || i==22 || i==23 || i==25 || i==26 || i==27 {
+            continue
+        } else {
+            append(&game.blocks, block)
+        }
     }
 
 
