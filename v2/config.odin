@@ -34,6 +34,21 @@ KEY_COLOR      := rl.Color{255, 203, 50, 255}
 BOX_COLOR      := rl.Color{150, 90, 45, 255}
 BOX_BORDER     := rl.Color{90, 50, 25, 255}
 
+// Stor halvtransparent 7-segment-siffra på bakgrunden
+LEVEL_DIGIT_COLOR := rl.Color{0, 0, 0, 128} // svart, ca 50% transparant
+LEVEL_SEGMENTS := [10]u8{
+    0x3F, // 0
+    0x06, // 1
+    0x5B, // 2
+    0x4F, // 3
+    0x66, // 4
+    0x6D, // 5
+    0x7D, // 6
+    0x07, // 7
+    0x7F, // 8
+    0x6F, // 9
+}
+
 TEST_SINGLE_BLOCK  :: true     // TILLFÄLLIGT: ett enda block i mitten för test
 TEST_ADVANCE_ON_HIT :: false   // TILLFÄLLIGT: byt level vid första blockträff (används ej)
 PORTAL_TEST_SCALE  :: 1.0      // TILLFÄLLIGT: större portaler under test

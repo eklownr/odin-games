@@ -125,6 +125,38 @@ draw_box :: proc(g: ^Game) {
 }
 
 
+// -- Stor 7-segment-siffra på bakgrunden (ca 50% transparant svart) --
+draw_level_digit :: proc(digit: int) {
+    if digit < 0 || digit > 9 { return }
+
+    x: f32 = (f32(SCREEN_WIDTH) - 200.0) / 2.0
+    y: f32 = (f32(SCREEN_HEIGHT) - 340.0) / 2.0
+    w: f32 = 200.0
+    h: f32 = 340.0
+    t: f32 = 26.0
+    vlen: f32 = (h - 3.0 * t) / 2.0
+
+    // a=överst, b=övre höger, c=nedre höger, d=nederst,
+    // e=nedre vänster, f=övre vänster, g=mitten
+    segs := [7]rl.Rectangle{
+        {x + t,     y,               w - 2.0*t, t},
+        {x + w - t, y + t,           t, vlen},
+        {x + w - t, y + (h + t)/2.0, t, vlen},
+        {x + t,     y + h - t,       w - 2.0*t, t},
+        {x,         y + (h + t)/2.0, t, vlen},
+        {x,         y + t,           t, vlen},
+        {x + t,     y + (h - t)/2.0, w - 2.0*t, t},
+    }
+
+    mask := LEVEL_SEGMENTS[digit]
+    for i in 0..<7 {
+        if ((mask >> u8(i)) & 1) != 0 {
+            rl.DrawRectangleRec(segs[i], LEVEL_DIGIT_COLOR)
+        }
+    }
+}
+
+
 ///////////////////////////////////////////
 // -- Ritlogik (Grafik) --
 draw_game :: proc(g: ^Game) {
@@ -145,6 +177,11 @@ draw_game :: proc(g: ^Game) {
             // Oförändrat
     }
     rl.ClearBackground(bg)
+
+    // Stor siffra på bakgrunden: nuvarande level, mål-level när röret börjar
+    digit := g.current_level
+    if g.state == .TUBE || g.state == .ZOOM_OUT { digit = g.pending_level }
+    draw_level_digit(digit)
 
     // Allt i världen ritas genom kameran (zoom bara under animationen)
     rl.BeginMode2D(g.camera)
@@ -210,7 +247,7 @@ draw_game :: proc(g: ^Game) {
     rl.EndMode2D()
 
     // HUD ritas utanför kameran så den inte zoomas
-    score_text := fmt.ctprintf("Score: %d   Level: %d", g.score, g.current_level)
+    score_text := fmt.ctprintf("Score: %d", g.score)
     hud_color := rl.DARKGRAY
     if g.state != .PLAY { hud_color = rl.WHITE }
     rl.DrawText(score_text, 10, 10, 24, hud_color)
