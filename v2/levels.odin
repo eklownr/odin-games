@@ -9,25 +9,30 @@ set_new_level :: proc(g: ^Game, lv: int) {
     // reset game blocks, Töm den nuvarande listan först
     resize(&g.blocks, 0)
     g.target_speed = 300 // reset ball speed
+    g.current_level = lv
 
-    // Kopiera alla element från level_1 till blocks
-    if lv == 1 {
-        for b in g.blocks_level_1 {
-            append(&g.blocks, b)
-        }
-    }
-    if lv == 2 {
-        for &b in g.blocks_level_2 {
-            // Generera slumpmässiga R, G, B värden (0-255)
-            r_val := u8(rl.GetRandomValue(0, 255))
-            g_val := u8(rl.GetRandomValue(0, 255))
-            b_val := u8(rl.GetRandomValue(0, 255))
-        
-            // Sätt färgen manuellt (Alpha sätts till 255 för heltäckande)
-            b.color = rl.Color{r_val, g_val, b_val, 255}
-        
-            append(&g.blocks, b)
-        }
+    switch lv {
+        case 1:
+            for b in g.blocks_level_1 {
+                append(&g.blocks, b)
+            }
+        case 2:
+            for template in g.blocks_level_2 {
+                b := template // Kopiera så template-färgerna inte ändras
+                // Generera slumpmässiga R, G, B värden (0-255)
+                r_val := u8(rl.GetRandomValue(0, 255))
+                g_val := u8(rl.GetRandomValue(0, 255))
+                b_val := u8(rl.GetRandomValue(0, 255))
+            
+                // Sätt färgen manuellt (Alpha sätts till 255 för heltäckande)
+                b.color = rl.Color{r_val, g_val, b_val, 255}
+            
+                append(&g.blocks, b)
+            }
+        case 3:
+            for b in g.blocks_level_3 {
+                append(&g.blocks, b)
+            }
     }
 }
 

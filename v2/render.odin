@@ -10,14 +10,10 @@ draw_game :: proc(g: ^Game) {
     rl.BeginDrawing()
     rl.ClearBackground(rl.SKYBLUE)
 
-      // Add background picture
-//    rl.DrawTextureEx(
-//        g.bg_image, 
-//        {0, 0}, 
-//        0.0, // Rotation
-//        f32(rl.GetScreenWidth()) / f32(g.bg_image.width), // Skala X för att fylla bredden
-//        rl.WHITE
-//    )
+    // Bakgrundsbild på level 1
+    if g.current_level == 1 && g.bg_image.id != 0 {
+        rl.DrawTexture(g.bg_image, 0, 0, rl.WHITE)
+    }
     
     // -- Rita Paddel --
     rect_pad := rl.Rectangle{g.paddle_x, g.paddle_y, PADDLE_WIDTH, PADDLE_HEIGHT}

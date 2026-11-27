@@ -140,9 +140,11 @@ update_game :: proc(g: ^Game, dt: f32) {
     g.blocks = new_blocks
 
     // -- Ny level --
-    // Om det inte finns några block, starta level2
+    // Om det inte finns några block, gå till nästa level (1 -> 2 -> 3 -> 1)
     if len(g.blocks) == 0 {
-        set_new_level(g, 2)
+        next_level := g.current_level + 1
+        if next_level > 3 { next_level = 1 }
+        set_new_level(g, next_level)
         reset_ball(g)
     }
 }

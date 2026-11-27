@@ -34,7 +34,9 @@ Game :: struct {
     blip_mid:       rl.Sound,
     blip_high:      rl.Sound,
     blip_high2:     rl.Sound,
-    blocks:         [dynamic]Block, // Lista med block
-    blocks_level_1: [dynamic]Block, // Lista med block
-    blocks_level_2: [dynamic]Block, // Lista med block
+    blocks:         [dynamic]Block, // Lista med block (aktiv level)
+    blocks_level_1: [dynamic]Block, // Lista med block (level 1 template)
+    blocks_level_2: [dynamic]Block, // Lista med block (level 2 template)
+    blocks_level_3: [dynamic]Block, // Lista med block (level 3 template)
+    current_level:  int,            // Vilken level spelas just nu
 }

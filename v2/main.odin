@@ -1,6 +1,7 @@
 package main
 
 import rl "vendor:raylib"
+import "core:fmt"
 
 
 /////////////////////////////////////////////
@@ -9,13 +10,13 @@ main :: proc() {
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Odin Breakout")
     defer rl.CloseWindow()
 
-//    bg_texture := rl.LoadTexture("val.gif")
-//    // Kontrollera att bilden laddades korrekt
-//    if bg_texture.id == 0 {
-//        fmt.println("Fel: Kunde inte ladda bakgrundsbilden!")
-//        return
-//    }
-//    defer rl.UnloadTexture(bg_texture)
+    bg_texture := rl.LoadTexture("bg.gif")
+    // Kontrollera att bilden laddades korrekt
+    if bg_texture.id == 0 {
+        fmt.println("Fel: Kunde inte ladda bakgrundsbilden!")
+        return
+    }
+    defer rl.UnloadTexture(bg_texture)
 
     // Initiera ljudsystemet
     rl.InitAudioDevice()
@@ -34,7 +35,8 @@ main :: proc() {
         blip_mid    = rl.LoadSound("blip.wav"),
         blip_high   = rl.LoadSound("blip.wav"),
         blip_high2  = rl.LoadSound("blip.wav"),
-        //bg_image    = bg_texture
+        bg_image    = bg_texture,
+        current_level = 1,
     }
 
     defer rl.UnloadSound(game.blip_low)
@@ -50,6 +52,9 @@ main :: proc() {
 
     // Lägg till 7 block per rad, med olika färger
     for i in 0..<28 {
+        row := i / 7
+        col := i % 7
+
         block := Block{
             pos    = {50.0 + f32(i) * 102.0, 50.0},
             size   = {90.0, 30.0},
@@ -69,15 +74,23 @@ main :: proc() {
             block.color = rl.RED
         }
 
-        append(&game.blocks_level_1, block)
+        // Level 1: ta bort block för att göra en triangel
+        if !(i==7 || i==13 || i==14 || i==15 || i==19 || i==20 || i==21 || i==22 || i==23 || i==25 || i==26 || i==27) {
+            append(&game.blocks_level_1, block)
+            append(&game.blocks, block) // Starta på level 1
+        }
+
+        // Level 2: alla block (färgerna slumpas i set_new_level)
         append(&game.blocks_level_2, block)
 
-        // remove blocks to make a triangel
-        if i==7 || i==13 || i==14 || i==15 || i==19 || i==20 || i==21 || i==22 || i==23 || i==25 || i==26 || i==27 {
-            continue
+        // Level 3: schackmönster i grönt och orange
+        block3 := block
+        if (row + col) % 2 == 0 {
+            block3.color = rl.GREEN
         } else {
-            append(&game.blocks, block)
+            block3.color = rl.ORANGE
         }
+        append(&game.blocks_level_3, block3)
     }
 
 
