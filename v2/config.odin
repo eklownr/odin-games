@@ -30,16 +30,6 @@ TEST_SINGLE_BLOCK  :: true     // TILLFÄLLIGT: ett enda block i mitten för tes
 TEST_ADVANCE_ON_HIT :: false   // TILLFÄLLIGT: byt level vid första blockträff (används ej)
 PORTAL_TEST_SCALE  :: 1.0      // TILLFÄLLIGT: större portaler under test
 
-// Portal-animation: fyra tunna streck som pulserar inåt
-PORTAL_PULSE_PERIOD :: 0.2      // Sekunder per färgsteg/puls
-PORTAL_STREAK_COUNT :: 4
-PORTAL_STREAK_WIDTH  :: 6.0   // Tjocklek på strecket
-PORTAL_STREAK_HEIGHT :: 100.0  // Längd på strecket längs portalen
-PORTAL_STREAK_INWARD :: 0.10   // Hur långt inåt mot spelplanen strecken glider per puls
-PORTAL_CLEAR_SCALE   :: 2.0     // Portaler blir dubbelt så stora när alla block är borta
-PORTAL_BASE_COLOR   := rl.Color{70, 72, 85, 55} // Mörkgrå bas, lite transpatant
-PORTAL_PULSE_COLORS := [4]rl.Color{rl.RED, rl.WHITE, rl.YELLOW, rl.BLUE}
-
 // Ljusa pastellbakgrunder per level
 BG_LEVEL_1 :: rl.Color{135, 206, 235, 255} // ljus skyblue
 BG_LEVEL_2 :: rl.Color{255, 218, 185, 255} // ljus orange
@@ -50,6 +40,22 @@ BG_LEVEL_6 :: rl.Color{255, 225, 235, 255} // ljus rosa
 BG_LEVEL_7 :: rl.Color{205, 245, 245, 255} // ljus turkos
 BG_LEVEL_8 :: rl.Color{255, 235, 205, 255} // ljus aprikos
 BG_LEVEL_9 :: rl.Color{232, 225, 248, 255} // ljus lavendel
+
+// Portal-animation: fyra tunna streck som pulserar inåt
+PORTAL_PULSE_PERIOD :: 0.2      // Sekunder per färgsteg/puls
+PORTAL_STREAK_COUNT :: 4
+PORTAL_STREAK_WIDTH  :: 3.0   // Tjocklek på strecket
+PORTAL_STREAK_HEIGHT :: 100.0  // Längd på strecket längs portalen
+PORTAL_STREAK_INWARD :: 0.10   // Hur långt inåt mot spelplanen strecken glider per puls
+PORTAL_CLEAR_SCALE   :: 2.0     // Portaler blir dubbelt så stora när alla block är borta
+PORTAL_BASE_COLOR   := rl.Color{70, 72, 85, 255} // Mörkgrå bas
+PORTAL_PULSE_COLORS := [4]rl.Color{BG_LEVEL_4, BG_LEVEL_5, BG_LEVEL_6, BG_LEVEL_7}
+
+// Subtil, fast varmgul/vit glow runt portalen
+PORTAL_GLOW_COLOR  := rl.Color{255, 238, 190, 255}
+PORTAL_GLOW_LAYERS :: 3
+PORTAL_GLOW_STEP   :: 6.0  // px per lager
+PORTAL_GLOW_ALPHA  :: 45   // Max-alpha per lager (avtar utåt)
 
 BG_COLORS := [LEVEL_COUNT]rl.Color{
     BG_LEVEL_1, BG_LEVEL_2, BG_LEVEL_3,

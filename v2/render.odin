@@ -28,12 +28,29 @@ tube_alpha :: proc(g: ^Game) -> f32 {
 
 // -- Portal: mörk bas + långa tunna streck som glider in mot spelplanen --
 draw_portal :: proc(portal: Portal) {
-    rl.DrawRectangleRounded(portal.rect, 0.2, 0, PORTAL_BASE_COLOR)
-
     t := f32(rl.GetTime()) / PORTAL_PULSE_PERIOD
     step := int(t)
     phase := t - f32(step)
     pulse := anim_smoothstep(phase) // 0 -> 1 under varje puls
+
+    // Subtil glow: stora lager först, starkast närmast portalen
+    for layer in 0..<PORTAL_GLOW_LAYERS {
+        idx := PORTAL_GLOW_LAYERS - 1 - layer
+        pad := PORTAL_GLOW_STEP * f32(idx + 1) * portal.scale
+        glow := PORTAL_GLOW_COLOR
+        a := f32(PORTAL_GLOW_ALPHA) * (1.0 - f32(idx) / f32(PORTAL_GLOW_LAYERS))
+        a *= 0.85 + 0.15 * pulse // liten andning i takt med pulsen
+        glow.a = u8(a)
+        glow_rect := rl.Rectangle{
+            portal.rect.x - pad,
+            portal.rect.y - pad,
+            portal.rect.width + 2.0 * pad,
+            portal.rect.height + 2.0 * pad,
+        }
+        rl.DrawRectangleRounded(glow_rect, 0.3, 0, glow)
+    }
+
+    rl.DrawRectangleRounded(portal.rect, 0.2, 0, PORTAL_BASE_COLOR)
 
     streak_width  := PORTAL_STREAK_WIDTH * portal.scale
     streak_height := PORTAL_STREAK_HEIGHT * portal.scale
