@@ -10,8 +10,30 @@ BALL_RADIUS   :: 10.0
 PADDLE_WIDTH  :: 100.0
 PADDLE_HEIGHT :: 20.0
 
+LEVEL_COUNT :: 9                 // Antal levels (1-9)
+
 BLIP_POOL_COUNT :: 5           // Antal samtidiga block-ljud
 BLIP_COOLDOWN   :: 0.05        // Minsta tid (s) mellan block-ljud
+
+TEST_SINGLE_BLOCK  :: false    // TILLFÄLLIGT: ett enda block i mitten för test
+TEST_ADVANCE_ON_HIT :: true    // TILLFÄLLIGT: byt level vid första blockträff
+
+// Ljusa pastellbakgrunder per level
+BG_LEVEL_1 :: rl.Color{135, 206, 235, 255} // ljus skyblue
+BG_LEVEL_2 :: rl.Color{255, 218, 185, 255} // ljus orange
+BG_LEVEL_3 :: rl.Color{216, 191, 216, 255} // ljus lila
+BG_LEVEL_4 :: rl.Color{200, 255, 220, 255} // ljus mint
+BG_LEVEL_5 :: rl.Color{255, 250, 205, 255} // ljus gul
+BG_LEVEL_6 :: rl.Color{255, 225, 235, 255} // ljus rosa
+BG_LEVEL_7 :: rl.Color{205, 245, 245, 255} // ljus turkos
+BG_LEVEL_8 :: rl.Color{255, 235, 205, 255} // ljus aprikos
+BG_LEVEL_9 :: rl.Color{232, 225, 248, 255} // ljus lavendel
+
+BG_COLORS := [LEVEL_COUNT]rl.Color{
+    BG_LEVEL_1, BG_LEVEL_2, BG_LEVEL_3,
+    BG_LEVEL_4, BG_LEVEL_5, BG_LEVEL_6,
+    BG_LEVEL_7, BG_LEVEL_8, BG_LEVEL_9,
+}
 
 
 // --- Datatyper ---
@@ -23,7 +45,6 @@ Block :: struct {
 }
 
 Game :: struct {
-    bg_image:       rl.Texture2D,
     score_text:     cstring,
     score:          int,
     ball_pos:       rl.Vector2,
@@ -39,9 +60,7 @@ Game :: struct {
     blip_high2:     rl.Sound,
     blip_pool:      [BLIP_POOL_COUNT]rl.Sound, // Aliaser för block-ljud
     last_blip_time: f64,                       // För att undvika ljud-stapling
-    blocks:         [dynamic]Block, // Lista med block (aktiv level)
-    blocks_level_1: [dynamic]Block, // Lista med block (level 1 template)
-    blocks_level_2: [dynamic]Block, // Lista med block (level 2 template)
-    blocks_level_3: [dynamic]Block, // Lista med block (level 3 template)
-    current_level:  int,            // Vilken level spelas just nu
+    blocks:         [dynamic]Block,              // Lista med block (aktiv level)
+    levels:         [LEVEL_COUNT][dynamic]Block, // Mallar för level 1-9
+    current_level:  int,                         // Vilken level spelas just nu
 }

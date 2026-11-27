@@ -8,12 +8,11 @@ import "core:fmt"
 // -- Ritlogik (Grafik) --
 draw_game :: proc(g: ^Game) {
     rl.BeginDrawing()
-    rl.ClearBackground(rl.SKYBLUE)
 
-    // Bakgrundsbild på level 1
-    if g.current_level == 1 && g.bg_image.id != 0 {
-        rl.DrawTexture(g.bg_image, 0, 0, rl.WHITE)
-    }
+    // Ljus pastellbakgrund beroende på level
+    level_index := g.current_level - 1
+    if level_index < 0 || level_index >= LEVEL_COUNT { level_index = 0 }
+    rl.ClearBackground(BG_COLORS[level_index])
     
     // -- Rita Paddel --
     rect_pad := rl.Rectangle{g.paddle_x, g.paddle_y, PADDLE_WIDTH, PADDLE_HEIGHT}

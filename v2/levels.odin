@@ -6,33 +6,32 @@ import rl "vendor:raylib"
 //////////////////////////////////////////
 // -- Set new Level --
 set_new_level :: proc(g: ^Game, lv: int) {
+    level := lv
+    if level < 1 || level > LEVEL_COUNT { level = 1 }
+
     // reset game blocks, Töm den nuvarande listan först
     resize(&g.blocks, 0)
     g.target_speed = 300 // reset ball speed
-    g.current_level = lv
+    g.current_level = level
 
-    switch lv {
-        case 1:
-            for b in g.blocks_level_1 {
-                append(&g.blocks, b)
+    // Level 2 får nya slumpmässiga färger varje gång
+    if level == 2 {
+        for template in g.levels[1] {
+            b := template // Kopiera så template-färgerna inte ändras
+            b.color = rl.Color{
+                u8(rl.GetRandomValue(0, 255)),
+                u8(rl.GetRandomValue(0, 255)),
+                u8(rl.GetRandomValue(0, 255)),
+                255,
             }
-        case 2:
-            for template in g.blocks_level_2 {
-                b := template // Kopiera så template-färgerna inte ändras
-                // Generera slumpmässiga R, G, B värden (0-255)
-                r_val := u8(rl.GetRandomValue(0, 255))
-                g_val := u8(rl.GetRandomValue(0, 255))
-                b_val := u8(rl.GetRandomValue(0, 255))
-            
-                // Sätt färgen manuellt (Alpha sätts till 255 för heltäckande)
-                b.color = rl.Color{r_val, g_val, b_val, 255}
-            
-                append(&g.blocks, b)
-            }
-        case 3:
-            for b in g.blocks_level_3 {
-                append(&g.blocks, b)
-            }
+            append(&g.blocks, b)
+        }
+        return
+    }
+
+    // Level 1 och 3-9 kopieras direkt från sin mall
+    for b in g.levels[level-1] {
+        append(&g.blocks, b)
     }
 }
 

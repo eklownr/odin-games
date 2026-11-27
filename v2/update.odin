@@ -101,6 +101,7 @@ update_game :: proc(g: ^Game, dt: f32) {
 
     //////////////////////////
     // -- Gå igenom alla block --
+    hit_this_frame := false
     for &block in g.blocks {
         if !block.active { continue } // Hoppa över förstörda block
     
@@ -114,6 +115,7 @@ update_game :: proc(g: ^Game, dt: f32) {
         
         // kollision boll och block
         if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, block_rect) {
+            hit_this_frame = true
             block.active = false // Markera som förstörd
             g.score += 1 // öka scor med ett vid kollision
             random_blip(g) // random blip-ljud
@@ -140,10 +142,10 @@ update_game :: proc(g: ^Game, dt: f32) {
     g.blocks = new_blocks
 
     // -- Ny level --
-    // Om det inte finns några block, gå till nästa level (1 -> 2 -> 3 -> 1)
-    if len(g.blocks) == 0 {
+    // Test: byt level direkt vid första träff, annars när alla block är borta
+    if len(g.blocks) == 0 || (TEST_ADVANCE_ON_HIT && hit_this_frame) {
         next_level := g.current_level + 1
-        if next_level > 3 { next_level = 1 }
+        if next_level > LEVEL_COUNT { next_level = 1 }
         set_new_level(g, next_level)
         reset_ball(g)
     }
