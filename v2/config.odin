@@ -11,6 +11,11 @@ PADDLE_WIDTH  :: 100.0
 PADDLE_HEIGHT :: 20.0
 BLOCK_SIZE    :: rl.Vector2{90.0, 30.0} // Standardstorlek för alla block
 
+// --- Bollfysik: dela upp rörelsen så bollen inte hoppar igenom block ---
+BALL_MAX_STEP  :: 8.0        // Max antal pixlar bollen flyttas per fysiksteg
+BALL_MAX_STEPS :: 16         // Övre gräns på antal steg per frame
+MAX_FRAME_DT   :: 1.0 / 30.0 // Klampa långa frames (t.ex. efter alt-tab)
+
 ROOM_COUNT :: 9                  // Antal rum (1-9)
 
 // --- Rum-animation: zoom in på bollen, studs i rör, zoom ut ---

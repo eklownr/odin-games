@@ -6,31 +6,30 @@ import "core:math"
 
 /////////////////////////////////////////////
 // --- Uppdateringslogik (Input & Fysik) ---
-update_game :: proc(g: ^Game, dt: f32) {
-    // Rum-animationen kör självständigt: frys vanligt spel under tiden
-    update_transition(g, dt)
-    if g.state != .PLAY { return }
 
-    // Efter segern fryses allt (Q fungerar fortfarande i main-loopen)
-    if g.won { return }
-
-    if g.missing_key_timer > 0 {
-        g.missing_key_timer -= dt
-        if g.missing_key_timer < 0 { g.missing_key_timer = 0 }
+// Kvadrerat avstånd från punkten till rektangeln. Används för att välja
+// närmaste block om flera råkar överlappa bollen i samma fysiksteg.
+ball_rect_dist_sq :: proc(p: rl.Vector2, r: rl.Rectangle) -> f32 {
+    dx: f32 = 0.0
+    if p.x < r.x {
+        dx = r.x - p.x
+    } else if p.x > r.x + r.width {
+        dx = p.x - (r.x + r.width)
     }
 
-    // Portaler växer direkt när alla block är borta (även hittboxen)
-    update_portal_scale(g)
-
-    // Paddel-rörelse
-    if rl.IsKeyDown(.LEFT)  { g.paddle_x -= g.paddle_speed * dt }
-    if rl.IsKeyDown(.RIGHT) { g.paddle_x += g.paddle_speed * dt }
-
-    // Begränsa paddeln till skärmen
-    if g.paddle_x < 0 { g.paddle_x = 0 }
-    if g.paddle_x > f32(SCREEN_WIDTH) - PADDLE_WIDTH {
-        g.paddle_x = f32(SCREEN_WIDTH) - PADDLE_WIDTH
+    dy: f32 = 0.0
+    if p.y < r.y {
+        dy = r.y - p.y
+    } else if p.y > r.y + r.height {
+        dy = p.y - (r.y + r.height)
     }
+    return dx*dx + dy*dy
+}
+
+// Ett fysiksteg för bollen. Returnerar false när spelet avbryts av en
+// portal, vinst eller bolltapp, så att update_game kan sluta steppinga.
+step_ball :: proc(g: ^Game, dt: f32) -> bool {
+    prev_pos := g.ball_pos
 
     // Uppdatera bollens position med X och Y hastighet
     g.ball_pos.x += g.ball_speed_x * dt
@@ -42,7 +41,7 @@ update_game :: proc(g: ^Game, dt: f32) {
         if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, portal.rect) {
             rl.PlaySound(g.blip_high)
             start_transition(g, portal.target_room, portal.dir)
-            return
+            return false
         }
     }
 
@@ -65,7 +64,7 @@ update_game :: proc(g: ^Game, dt: f32) {
                 g.ball_speed_x = 0
                 g.ball_speed_y = 0
                 rl.PlaySound(g.blip_high2)
-                return
+                return false
             }
 
             // Ingen nyckel: kort meddelande och studsa ut bollen ur kistan
@@ -153,15 +152,19 @@ update_game :: proc(g: ^Game, dt: f32) {
         g.has_key = false // Nyckeln måste hämtas igen i rum 7
         reset_room(g, g.current_room) // Bolltapp nollställer blocken som tidigare
         reset_ball(g)
+        return false
     }
 
-
     //////////////////////////
-    // -- Gå igenom alla block --
-    for &block in g.blocks {
+    // -- Kollision med block --
+    // Bara ett block per steg: annars kan studsen vändas flera gånger.
+    hit_index := -1
+    hit_rect := rl.Rectangle{}
+    hit_dist := f32(0)
+    for i := 0; i < len(g.blocks); i += 1 {
+        block := g.blocks[i]
         if !block.active { continue } // Hoppa över förstörda block
 
-        // Skapa en rektangel för blocket
         block_rect := rl.Rectangle{
             x = block.pos.x,
             y = block.pos.y,
@@ -169,19 +172,104 @@ update_game :: proc(g: ^Game, dt: f32) {
             height = block.size.y,
         }
 
-        // kollision boll och block
-        if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, block_rect) {
-            block.active = false // Markera som förstörd
-            g.score += 1 // öka scor med ett vid kollision
-            random_blip(g) // random blip-ljud
-            g.target_speed += 10 // öka total hastighet på bollen varje träff av block
-            // Enkel studs (vänd Y-hastighet)
-            g.ball_speed_y *= -1.0
+        if !rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, block_rect) { continue }
 
-            // FIXA Kommer bollen upp ifrån eller under ifrån?
-            // Flytta ut bollen ur blocket för att undvika dubbelkollision
-            g.ball_pos.y = block.pos.y + block.size.y + BALL_RADIUS
+        dist := ball_rect_dist_sq(prev_pos, block_rect)
+        if hit_index < 0 || dist < hit_dist {
+            hit_index = i
+            hit_rect = block_rect
+            hit_dist = dist
         }
+    }
+
+    if hit_index >= 0 {
+        g.blocks[hit_index].active = false // Markera som förstörd
+        g.score += 1 // öka scor med ett vid kollision
+        random_blip(g) // random blip-ljud
+        g.target_speed += 10 // öka total hastighet på bollen varje träff av block
+
+        // Minsta "överlappet" avgör vilken sida bollen kom ifrån.
+        // Flytta ut den på den sidan och vänd bara rätt hastighetskomponent.
+        push_left   := (g.ball_pos.x + BALL_RADIUS) - hit_rect.x
+        push_right  := (hit_rect.x + hit_rect.width) - (g.ball_pos.x - BALL_RADIUS)
+        push_top    := (g.ball_pos.y + BALL_RADIUS) - hit_rect.y
+        push_bottom := (hit_rect.y + hit_rect.height) - (g.ball_pos.y - BALL_RADIUS)
+
+        smallest := push_left
+        side := 0 // vänster
+        if push_right < smallest {
+            smallest = push_right
+            side = 1 // höger
+        }
+        if push_top < smallest {
+            smallest = push_top
+            side = 2 // uppifrån
+        }
+        if push_bottom < smallest {
+            smallest = push_bottom
+            side = 3 // underifrån
+        }
+
+        switch side {
+            case 0: // vänster sida
+                g.ball_pos.x = hit_rect.x - BALL_RADIUS
+                if g.ball_speed_x > 0 { g.ball_speed_x *= -1.0 }
+            case 1: // höger sida
+                g.ball_pos.x = hit_rect.x + hit_rect.width + BALL_RADIUS
+                if g.ball_speed_x < 0 { g.ball_speed_x *= -1.0 }
+            case 2: // uppifrån
+                g.ball_pos.y = hit_rect.y - BALL_RADIUS
+                if g.ball_speed_y > 0 { g.ball_speed_y *= -1.0 }
+            case 3: // underifrån
+                g.ball_pos.y = hit_rect.y + hit_rect.height + BALL_RADIUS
+                if g.ball_speed_y < 0 { g.ball_speed_y *= -1.0 }
+        }
+    }
+
+    return true
+}
+
+update_game :: proc(g: ^Game, dt: f32) {
+    // Rum-animationen kör självständigt: frys vanligt spel under tiden
+    update_transition(g, dt)
+    if g.state != .PLAY { return }
+
+    // Efter segern fryses allt (Q fungerar fortfarande i main-loopen)
+    if g.won { return }
+
+    // Klampa långa frames så bollen inte flyttas för långt i ett svep
+    frame_dt := dt
+    if frame_dt > MAX_FRAME_DT { frame_dt = MAX_FRAME_DT }
+
+    if g.missing_key_timer > 0 {
+        g.missing_key_timer -= frame_dt
+        if g.missing_key_timer < 0 { g.missing_key_timer = 0 }
+    }
+
+    // Portaler växer direkt när alla block är borta (även hittboxen)
+    update_portal_scale(g)
+
+    // Paddel-rörelse
+    if rl.IsKeyDown(.LEFT)  { g.paddle_x -= g.paddle_speed * frame_dt }
+    if rl.IsKeyDown(.RIGHT) { g.paddle_x += g.paddle_speed * frame_dt }
+
+    // Begränsa paddeln till skärmen
+    if g.paddle_x < 0 { g.paddle_x = 0 }
+    if g.paddle_x > f32(SCREEN_WIDTH) - PADDLE_WIDTH {
+        g.paddle_x = f32(SCREEN_WIDTH) - PADDLE_WIDTH
+    }
+
+    // Dela upp bollens rörelse i små steg så den inte kan hoppa igenom
+    // block eller paddeln, även när farten ökar för varje träff.
+    speed := math.sqrt(g.ball_speed_x*g.ball_speed_x + g.ball_speed_y*g.ball_speed_y)
+    steps := 1
+    if speed * frame_dt > BALL_MAX_STEP {
+        steps = int(math.ceil(speed * frame_dt / BALL_MAX_STEP))
+        if steps > BALL_MAX_STEPS { steps = BALL_MAX_STEPS }
+    }
+    sub_dt := frame_dt / f32(steps)
+    for _ in 0..<steps {
+        if !step_ball(g, sub_dt) { break }
     }
 
     // Rensa listan (Ta bort inaktiva block)
