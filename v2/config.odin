@@ -10,6 +10,9 @@ BALL_RADIUS   :: 10.0
 PADDLE_WIDTH  :: 100.0
 PADDLE_HEIGHT :: 20.0
 
+BLIP_POOL_COUNT :: 5           // Antal samtidiga block-ljud
+BLIP_COOLDOWN   :: 0.05        // Minsta tid (s) mellan block-ljud
+
 
 // --- Datatyper ---
 Block :: struct {
@@ -34,6 +37,8 @@ Game :: struct {
     blip_mid:       rl.Sound,
     blip_high:      rl.Sound,
     blip_high2:     rl.Sound,
+    blip_pool:      [BLIP_POOL_COUNT]rl.Sound, // Aliaser för block-ljud
+    last_blip_time: f64,                       // För att undvika ljud-stapling
     blocks:         [dynamic]Block, // Lista med block (aktiv level)
     blocks_level_1: [dynamic]Block, // Lista med block (level 1 template)
     blocks_level_2: [dynamic]Block, // Lista med block (level 2 template)

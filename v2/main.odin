@@ -43,12 +43,15 @@ main :: proc() {
     defer rl.UnloadSound(game.blip_mid)
     defer rl.UnloadSound(game.blip_high)
     defer rl.UnloadSound(game.blip_high2)
+    defer unload_blip_pool(&game) // Måste städas innan original-ljudet
 
     // Sätt pitchen EN gång vid start:
     rl.SetSoundPitch(game.blip_low, 0.8)
     rl.SetSoundPitch(game.blip_mid, 1.0)
     rl.SetSoundPitch(game.blip_high, 1.5)
     rl.SetSoundPitch(game.blip_high2, 2.0)
+
+    init_blip_pool(&game)
 
     // Lägg till 7 block per rad, med olika färger
     for i in 0..<28 {
