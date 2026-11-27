@@ -30,16 +30,16 @@ TEST_SINGLE_BLOCK  :: true     // TILLFÄLLIGT: ett enda block i mitten för tes
 TEST_ADVANCE_ON_HIT :: false   // TILLFÄLLIGT: byt level vid första blockträff (används ej)
 PORTAL_TEST_SCALE  :: 1.0      // TILLFÄLLIGT: större portaler under test
 
-// Ljusa pastellbakgrunder per level
-BG_LEVEL_1 :: rl.Color{135, 206, 235, 255} // ljus skyblue
-BG_LEVEL_2 :: rl.Color{255, 218, 185, 255} // ljus orange
-BG_LEVEL_3 :: rl.Color{216, 191, 216, 255} // ljus lila
-BG_LEVEL_4 :: rl.Color{200, 255, 220, 255} // ljus mint
-BG_LEVEL_5 :: rl.Color{255, 250, 205, 255} // ljus gul
-BG_LEVEL_6 :: rl.Color{255, 225, 235, 255} // ljus rosa
-BG_LEVEL_7 :: rl.Color{205, 245, 245, 255} // ljus turkos
-BG_LEVEL_8 :: rl.Color{255, 235, 205, 255} // ljus aprikos
-BG_LEVEL_9 :: rl.Color{232, 225, 248, 255} // ljus lavendel
+// Pastellbakgrunder per level (mörkare)
+BG_LEVEL_1 :: rl.Color{92, 163, 192, 255}  // ljus skyblue
+BG_LEVEL_2 :: rl.Color{212, 175, 142, 255} // ljus orange
+BG_LEVEL_3 :: rl.Color{173, 148, 173, 255} // ljus lila
+BG_LEVEL_4 :: rl.Color{157, 212, 177, 255} // ljus mint
+BG_LEVEL_5 :: rl.Color{212, 207, 162, 255} // ljus gul
+BG_LEVEL_6 :: rl.Color{212, 182, 192, 255} // ljus rosa
+BG_LEVEL_7 :: rl.Color{162, 202, 202, 255} // ljus turkos
+BG_LEVEL_8 :: rl.Color{212, 192, 162, 255} // ljus aprikos
+BG_LEVEL_9 :: rl.Color{189, 182, 205, 255} // ljus lavendel
 
 // Portal-animation: fyra tunna streck som pulserar inåt
 PORTAL_PULSE_PERIOD :: 0.2      // Sekunder per färgsteg/puls
