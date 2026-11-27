@@ -11,6 +11,7 @@ SCREEN_HEIGHT :: 600
 BALL_RADIUS   :: 10.0
 PADDLE_WIDTH  :: 100.0
 PADDLE_HEIGHT :: 20.0
+MAX_DT        :: 1.0 / 30.0 // Klampa långa frames så bollen inte går igenom objekt
 
 
 // --- Datatyper ---
@@ -54,6 +55,9 @@ update_game :: proc(g: ^Game, dt: f32) {
         g.paddle_x = f32(SCREEN_WIDTH) - PADDLE_WIDTH
     }
 
+    // Spara föregående position för att kunna avgöra från vilket håll block träffas
+    prev_ball_pos := g.ball_pos
+
     // Uppdatera bollens position med X och Y hastighet
     g.ball_pos.x += g.ball_speed_x * dt
     g.ball_pos.y += g.ball_speed_y * dt
@@ -62,49 +66,27 @@ update_game :: proc(g: ^Game, dt: f32) {
     // -- Kollision med Paddel --
     paddle_rect := rl.Rectangle{x = g.paddle_x, y = g.paddle_y, width = PADDLE_WIDTH, height = PADDLE_HEIGHT}
     
-    if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, paddle_rect) {
-        // spela ljud vid kollision
+    // Studsa bara om bollen kommer uppifrån, annars kan den fastna i paddeln
+    if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, paddle_rect) && g.ball_speed_y > 0 {
         rl.PlaySound(g.blip_high)
 
-        // 1. Beräkna ny riktning baserat på träffpunkt
-        hit_offset := g.ball_pos.x - (g.paddle_x + PADDLE_WIDTH/2.0)
-        normalized_offset := hit_offset / (PADDLE_WIDTH/2.0)
+        // Beräkna ny riktning baserat på var på paddeln bollen träffade
+        paddle_center_x := g.paddle_x + PADDLE_WIDTH / 2.0
+        normalized_offset := (g.ball_pos.x - paddle_center_x) / (PADDLE_WIDTH / 2.0)
+        normalized_offset = math.clamp(normalized_offset, -1.0, 1.0)
 
         g.ball_speed_y = -300.0 // Studsa uppåt med basfart
-        g.ball_speed_x = normalized_offset * 400.0 // Lägg till sidledshastighet
+        g.ball_speed_x = normalized_offset * 400.0 // Sidledshastighet
 
-        // 2. NORMALISERA (Detta fixar hastigheten automatiskt)
+        // Normalisera till målfarten
         current_speed := math.sqrt(g.ball_speed_x*g.ball_speed_x + g.ball_speed_y*g.ball_speed_y)
-
         if current_speed != 0.0 {
-            //g.target_speed = f32(300) // Konstant totalfart
             g.ball_speed_x = (g.ball_speed_x / current_speed) * g.target_speed
             g.ball_speed_y = (g.ball_speed_y / current_speed) * g.target_speed
-        }   
-
-        // Se till att bollen bara studsar om den kommer uppifrån (för att undvika att den fastnar)
-        if g.ball_speed_y > 0 && g.ball_pos.y < g.paddle_y + PADDLE_HEIGHT {
-            
-            // 1. Beräkna var på paddeln bollen träffade (Relativt till mitten)
-            // Paddelns mitt-x
-            paddle_center_x := g.paddle_x + PADDLE_WIDTH / 2.0
-            
-            // Avståndet från mitten (-50 till +50 om paddeln är 100 bred)
-            hit_offset := g.ball_pos.x - paddle_center_x
-            
-            // Normalisera värdet till mellan -1.0 (vänster kant) och 1.0 (höger kant)
-            normalized_offset := hit_offset / (PADDLE_WIDTH / 2.0)
-
-            // 2. Sätt nya hastigheter
-            g.ball_speed_y *= -1.0 // Alltid studsa uppåt
-            
-            // Ändra X-hastigheten baserat på var den träffade
-            // T.ex. max 400 hastighet i sidled
-            g.ball_speed_x = normalized_offset * 400.0 
-
-            // Flytta ut bollen ur paddeln så den inte fastnar
-            g.ball_pos.y = g.paddle_y - BALL_RADIUS
         }
+
+        // Flytta ut bollen ovanför paddeln så kollisionen inte upprepas varje frame
+        g.ball_pos.y = g.paddle_y - BALL_RADIUS
     }
 
     //  -- Väggkollision (Vänster/Höger) --
@@ -155,26 +137,54 @@ update_game :: proc(g: ^Game, dt: f32) {
             g.score += 1 // öka scor med ett vid kollision
             random_blip(g) // random blip-ljud
             g.target_speed += 10 // öka total hastighet på bollen varje träff av block
-            // Enkel studs (vänd Y-hastighet)
-            g.ball_speed_y *= -1.0
-            
-            // FIXA Kommer bollen upp ifrån eller under ifrån?
-            // Flytta ut bollen ur blocket för att undvika dubbelkollision
-            g.ball_pos.y = block.pos.y + block.size.y + BALL_RADIUS 
+
+            // Avgör från vilket håll bollen kom (före rörelsen) och studsa åt rätt håll
+            came_from_top    := prev_ball_pos.y + BALL_RADIUS <= block.pos.y
+            came_from_bottom := prev_ball_pos.y - BALL_RADIUS >= block.pos.y + block.size.y
+            came_from_left   := prev_ball_pos.x + BALL_RADIUS <= block.pos.x
+            came_from_right  := prev_ball_pos.x - BALL_RADIUS >= block.pos.x + block.size.x
+
+            if came_from_top || came_from_bottom {
+                g.ball_speed_y *= -1.0
+                if came_from_top {
+                    g.ball_pos.y = block.pos.y - BALL_RADIUS
+                } else {
+                    g.ball_pos.y = block.pos.y + block.size.y + BALL_RADIUS
+                }
+            } else if came_from_left || came_from_right {
+                g.ball_speed_x *= -1.0
+                if came_from_left {
+                    g.ball_pos.x = block.pos.x - BALL_RADIUS
+                } else {
+                    g.ball_pos.x = block.pos.x + block.size.x + BALL_RADIUS
+                }
+            } else if math.abs(g.ball_speed_y) >= math.abs(g.ball_speed_x) {
+                g.ball_speed_y *= -1.0
+            } else {
+                g.ball_speed_x *= -1.0
+            }
+
+            // Applicera den nya målfarten direkt istället för att vänta till paddelstudsen
+            speed := math.sqrt(g.ball_speed_x*g.ball_speed_x + g.ball_speed_y*g.ball_speed_y)
+            if speed != 0.0 {
+                scale := g.target_speed / speed
+                g.ball_speed_x *= scale
+                g.ball_speed_y *= scale
+            }
+
+            break // högst ett block per frame
         }
     }
 
-    // Rensa listan (Ta bort inaktiva block)
-    new_blocks: [dynamic]Block
+    // Rensa listan (Ta bort inaktiva block) utan att allokera om varje frame
+    write_index := 0
     for block in g.blocks {
         if block.active {
-            append(&new_blocks, block)
+            g.blocks[write_index] = block
+            write_index += 1
         }
     }
-
-    // Byt ut den gamla listan mot den nya och städa minnet
-    delete(g.blocks)
-    g.blocks = new_blocks
+    resize(&g.blocks, write_index)
 
     // -- Ny level --
     // Om det inte finns några block, starta level2
@@ -312,7 +322,8 @@ main :: proc() {
 
     for !rl.WindowShouldClose() && !should_close {
         dt := rl.GetFrameTime()
-        
+        if dt > MAX_DT { dt = MAX_DT } // Undvik tunneling vid långa frames
+
         update_game(&game, dt) // Uppdatera logik
         draw_game(&game)       // Rita grafik
         
