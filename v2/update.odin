@@ -7,7 +7,7 @@ import "core:math"
 /////////////////////////////////////////////
 // --- Uppdateringslogik (Input & Fysik) ---
 update_game :: proc(g: ^Game, dt: f32) {
-    // Level-animationen kör självständigt: frys vanligt spel under tiden
+    // Rum-animationen kör självständigt: frys vanligt spel under tiden
     update_transition(g, dt)
     if g.state != .PLAY { return }
 
@@ -25,7 +25,7 @@ update_game :: proc(g: ^Game, dt: f32) {
     // Paddel-rörelse
     if rl.IsKeyDown(.LEFT)  { g.paddle_x -= g.paddle_speed * dt }
     if rl.IsKeyDown(.RIGHT) { g.paddle_x += g.paddle_speed * dt }
-    
+
     // Begränsa paddeln till skärmen
     if g.paddle_x < 0 { g.paddle_x = 0 }
     if g.paddle_x > f32(SCREEN_WIDTH) - PADDLE_WIDTH {
@@ -36,18 +36,18 @@ update_game :: proc(g: ^Game, dt: f32) {
     g.ball_pos.x += g.ball_speed_x * dt
     g.ball_pos.y += g.ball_speed_y * dt
 
-    // -- Portaler: enda sättet att byta level --
+    // -- Portaler: enda sättet att byta rum --
     // Kontrolleras före vägg-/takkollision så bollen hinner nå portalen
     for portal in g.portals {
         if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, portal.rect) {
             rl.PlaySound(g.blip_high)
-            start_transition(g, portal.target_level, portal.dir)
+            start_transition(g, portal.target_room, portal.dir)
             return
         }
     }
 
-    // -- Nyckeln i level 7: plockas när bollen träffar den --
-    if g.current_level == 7 && !g.has_key {
+    // -- Nyckeln i rum 7: plockas när bollen träffar den --
+    if g.current_room == 7 && !g.has_key {
         if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, KEY_RECT) {
             g.has_key = true
             g.score += 5
@@ -55,8 +55,8 @@ update_game :: proc(g: ^Game, dt: f32) {
         }
     }
 
-    // -- Lådan i level 9 --
-    if g.current_level == 9 && !g.box_unlocked {
+    // -- Kistan i rum 9 --
+    if g.current_room == 9 && !g.box_unlocked {
         if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, BOX_RECT) {
             if g.has_key {
                 // Upplåst: visa Grattis-texten och frys spelet
@@ -68,7 +68,7 @@ update_game :: proc(g: ^Game, dt: f32) {
                 return
             }
 
-            // Ingen nyckel: kort meddelande och studsa ut bollen ur lådan
+            // Ingen nyckel: kort meddelande och studsa ut bollen ur kistan
             g.missing_key_timer = MISSING_KEY_TIME
             rl.PlaySound(g.blip_low)
             if g.ball_speed_y > 0 {
@@ -83,7 +83,7 @@ update_game :: proc(g: ^Game, dt: f32) {
     /////////////////////////////////////////
     // -- Kollision med Paddel --
     paddle_rect := rl.Rectangle{x = g.paddle_x, y = g.paddle_y, width = PADDLE_WIDTH, height = PADDLE_HEIGHT}
-    
+
     if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, paddle_rect) {
         // spela ljud vid kollision
         rl.PlaySound(g.blip_high)
@@ -102,27 +102,27 @@ update_game :: proc(g: ^Game, dt: f32) {
             //g.target_speed = f32(300) // Konstant totalfart
             g.ball_speed_x = (g.ball_speed_x / current_speed) * g.target_speed
             g.ball_speed_y = (g.ball_speed_y / current_speed) * g.target_speed
-        }   
+        }
 
         // Se till att bollen bara studsar om den kommer uppifrån (för att undvika att den fastnar)
         if g.ball_speed_y > 0 && g.ball_pos.y < g.paddle_y + PADDLE_HEIGHT {
-            
+
             // 1. Beräkna var på paddeln bollen träffade (Relativt till mitten)
             // Paddelns mitt-x
             paddle_center_x := g.paddle_x + PADDLE_WIDTH / 2.0
-            
+
             // Avståndet från mitten (-50 till +50 om paddeln är 100 bred)
             hit_offset := g.ball_pos.x - paddle_center_x
-            
+
             // Normalisera värdet till mellan -1.0 (vänster kant) och 1.0 (höger kant)
             normalized_offset := hit_offset / (PADDLE_WIDTH / 2.0)
 
             // 2. Sätt nya hastigheter
             g.ball_speed_y *= -1.0 // Alltid studsa uppåt
-            
+
             // Ändra X-hastigheten baserat på var den träffade
             // T.ex. max 400 hastighet i sidled
-            g.ball_speed_x = normalized_offset * 400.0 
+            g.ball_speed_x = normalized_offset * 400.0
 
             // Flytta ut bollen ur paddeln så den inte fastnar
             g.ball_pos.y = g.paddle_y - BALL_RADIUS
@@ -144,23 +144,23 @@ update_game :: proc(g: ^Game, dt: f32) {
     if g.ball_pos.y - BALL_RADIUS < f32(0.0) {
         rl.PlaySound(g.blip_high)
         g.ball_pos.y = f32(10) + BALL_RADIUS
-        g.ball_speed_y = 300.0  
+        g.ball_speed_y = 300.0
     }
 
-    // -- Reset vid golvet: börja om samma level --
+    // -- Reset vid golvet: börja om samma rum --
     if g.ball_pos.y - BALL_RADIUS > f32(SCREEN_HEIGHT) {
         rl.PlaySound(g.blip_high2)
-        g.has_key = false // Nyckeln måste hämtas igen i level 7
-        reset_level(g, g.current_level) // Bolltapp nollställer blocken som tidigare
+        g.has_key = false // Nyckeln måste hämtas igen i rum 7
+        reset_room(g, g.current_room) // Bolltapp nollställer blocken som tidigare
         reset_ball(g)
     }
-    
+
 
     //////////////////////////
     // -- Gå igenom alla block --
     for &block in g.blocks {
         if !block.active { continue } // Hoppa över förstörda block
-    
+
         // Skapa en rektangel för blocket
         block_rect := rl.Rectangle{
             x = block.pos.x,
@@ -168,7 +168,7 @@ update_game :: proc(g: ^Game, dt: f32) {
             width = block.size.x,
             height = block.size.y,
         }
-        
+
         // kollision boll och block
         if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, block_rect) {
             block.active = false // Markera som förstörd
@@ -177,10 +177,10 @@ update_game :: proc(g: ^Game, dt: f32) {
             g.target_speed += 10 // öka total hastighet på bollen varje träff av block
             // Enkel studs (vänd Y-hastighet)
             g.ball_speed_y *= -1.0
-            
+
             // FIXA Kommer bollen upp ifrån eller under ifrån?
             // Flytta ut bollen ur blocket för att undvika dubbelkollision
-            g.ball_pos.y = block.pos.y + block.size.y + BALL_RADIUS 
+            g.ball_pos.y = block.pos.y + block.size.y + BALL_RADIUS
         }
     }
 
@@ -196,6 +196,6 @@ update_game :: proc(g: ^Game, dt: f32) {
     delete(g.blocks)
     g.blocks = new_blocks
 
-    // Att sista blocket försvinner byter inte level – portalerna växer bara
+    // Att sista blocket försvinner byter inte rum – portalerna växer bara
     update_portal_scale(g)
 }

@@ -4,9 +4,9 @@ import rl "vendor:raylib"
 import "core:fmt"
 
 
-level_bg :: proc(level: int) -> rl.Color {
-    i := level - 1
-    if i < 0 || i >= LEVEL_COUNT { i = 0 }
+room_bg :: proc(room: int) -> rl.Color {
+    i := room - 1
+    if i < 0 || i >= ROOM_COUNT { i = 0 }
     return BG_COLORS[i]
 }
 
@@ -94,9 +94,9 @@ draw_portal :: proc(portal: Portal) {
 }
 
 
-// -- Nyckeln i level 7: gul nyckel med hål, skaft och tänder --
+// -- Nyckeln i rum 7: gul nyckel med hål, skaft och tänder --
 draw_key :: proc(g: ^Game) {
-    if g.current_level != 7 || g.has_key { return }
+    if g.current_room != 7 || g.has_key { return }
 
     x := KEY_RECT.x
     y := KEY_RECT.y
@@ -104,12 +104,12 @@ draw_key :: proc(g: ^Game) {
     rl.DrawRectangleRec(rl.Rectangle{x + 40.0, y + 12.0, 5.0, 9.0}, KEY_COLOR)
     rl.DrawRectangleRec(rl.Rectangle{x + 14.0, y + 6.0, 34.0, 8.0}, KEY_COLOR)
     rl.DrawCircleV(rl.Vector2{x + 10.0, y + 10.0}, 10.0, KEY_COLOR)
-    rl.DrawCircleV(rl.Vector2{x + 10.0, y + 10.0}, 4.0, level_bg(g.current_level))
+    rl.DrawCircleV(rl.Vector2{x + 10.0, y + 10.0}, 4.0, room_bg(g.current_room))
 }
 
-// -- Lådan i level 9: brun låda med stort nyckelhål --
+// -- Kistan i rum 9: brun kista med stort nyckelhål --
 draw_box :: proc(g: ^Game) {
-    if g.current_level != 9 { return }
+    if g.current_room != 9 { return }
 
     r := BOX_RECT
     rl.DrawRectangleRounded(r, 0.12, 0, BOX_BORDER)
@@ -126,7 +126,7 @@ draw_box :: proc(g: ^Game) {
 
 
 // -- Stor 7-segment-siffra på bakgrunden (ca 50% transparant svart) --
-draw_level_digit :: proc(digit: int) {
+draw_room_digit :: proc(digit: int) {
     if digit < 0 || digit > 9 { return }
 
     x: f32 = (f32(SCREEN_WIDTH) - 200.0) / 2.0
@@ -148,22 +148,22 @@ draw_level_digit :: proc(digit: int) {
         {x + t,     y + (h - t)/2.0, w - 2.0*t, t},
     }
 
-    mask := LEVEL_SEGMENTS[digit]
+    mask := ROOM_SEGMENTS[digit]
     for i in 0..<7 {
         if ((mask >> u8(i)) & 1) != 0 {
-            rl.DrawRectangleRec(segs[i], LEVEL_DIGIT_COLOR)
+            rl.DrawRectangleRec(segs[i], ROOM_DIGIT_COLOR)
         }
     }
 }
 
 
-///////////////////////////////////////////
+/////////////////////////////////////////////
 // -- Ritlogik (Grafik) --
 draw_game :: proc(g: ^Game) {
     rl.BeginDrawing()
 
     // Bakgrund: pastell i spel -> mörk i röret -> pastell igen
-    bg := level_bg(g.current_level)
+    bg := room_bg(g.current_room)
     switch g.state {
         case .ZOOM_IN:
             t := anim_smoothstep(g.transition_timer / ANIM_ZOOM_IN_TIME)
@@ -172,16 +172,16 @@ draw_game :: proc(g: ^Game) {
             bg = ANIM_BG_DARK
         case .ZOOM_OUT:
             t := anim_smoothstep(g.transition_timer / ANIM_ZOOM_OUT_TIME)
-            bg = rl.ColorLerp(ANIM_BG_DARK, level_bg(g.pending_level), t)
+            bg = rl.ColorLerp(ANIM_BG_DARK, room_bg(g.pending_room), t)
         case .PLAY:
             // Oförändrat
     }
     rl.ClearBackground(bg)
 
-    // Stor siffra på bakgrunden: nuvarande level, mål-level när röret börjar
-    digit := g.current_level
-    if g.state == .TUBE || g.state == .ZOOM_OUT { digit = g.pending_level }
-    draw_level_digit(digit)
+    // Stor siffra på bakgrunden: nuvarande rum, mål-rum när röret börjar
+    digit := g.current_room
+    if g.state == .TUBE || g.state == .ZOOM_OUT { digit = g.pending_room }
+    draw_room_digit(digit)
 
     // Allt i världen ritas genom kameran (zoom bara under animationen)
     rl.BeginMode2D(g.camera)
@@ -218,7 +218,7 @@ draw_game :: proc(g: ^Game) {
         draw_portal(portal)
     }
 
-    // -- Nyckel (level 7) och låda (level 9) --
+    // -- Nyckel (rum 7) och kista (rum 9) --
     draw_key(g)
     draw_box(g)
 
@@ -258,8 +258,8 @@ draw_game :: proc(g: ^Game) {
         msg2: cstring = "Du klarade spelet."
         w1 := rl.MeasureText(msg1, 40)
         w2 := rl.MeasureText(msg2, 30)
-        rl.DrawText(msg1, i32(SCREEN_WIDTH)/2 - w1/2, 240, 40, rl.DARKGRAY)
-        rl.DrawText(msg2, i32(SCREEN_WIDTH)/2 - w2/2, 300, 30, rl.DARKGRAY)
+        rl.DrawText(msg1, i32(SCREEN_WIDTH)/2 - w1/2, 240, 40, rl.BLACK)
+        rl.DrawText(msg2, i32(SCREEN_WIDTH)/2 - w2/2, 300, 30, rl.BLACK)
     } else if g.missing_key_timer > 0 {
         msg: cstring = "Nyckel saknas"
         w := rl.MeasureText(msg, 24)

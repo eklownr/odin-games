@@ -16,7 +16,7 @@ portal_scale_for :: proc(g: ^Game) -> f32 {
 portal_rect :: proc(dir: Tube_Direction, scale: f32) -> rl.Rectangle {
     cx := f32(SCREEN_WIDTH) / 2.0
     cy := f32(SCREEN_HEIGHT) / 2.0
-    thick: f32 = 4.0 * PORTAL_TEST_SCALE * scale
+    thick: f32 = 4.0 * scale
     length: f32 = PORTAL_STREAK_HEIGHT * scale
 
     r := rl.Rectangle{}
@@ -35,7 +35,7 @@ add_portal :: proc(g: ^Game, dir: Tube_Direction, target: int) {
     scale := portal_scale_for(g)
     append(&g.portals, Portal{
         rect         = portal_rect(dir, scale),
-        target_level = target,
+        target_room  = target,
         dir          = dir,
         scale        = scale,
     })
@@ -56,7 +56,7 @@ spawn_portals :: proc(g: ^Game) {
     // Karta:    789
     //           456
     //           123   (start: 2)
-    switch g.current_level {
+    switch g.current_room {
         case 1:
             add_portal(g, .UP, 4)
             add_portal(g, .RIGHT, 2)
@@ -87,38 +87,38 @@ spawn_portals :: proc(g: ^Game) {
 
 
 ////////////////////////////////////////
-// -- Spara banan när vi lämnar en level via portal --
+// -- Spara banan när vi lämnar ett rum via portal --
 save_current_blocks :: proc(g: ^Game) {
-    level := g.current_level
-    if level < 1 || level > LEVEL_COUNT { return }
+    room := g.current_room
+    if room < 1 || room > ROOM_COUNT { return }
 
-    idx := level - 1
+    idx := room - 1
     resize(&g.saved_blocks[idx], 0)
     for block in g.blocks {
         if block.active { append(&g.saved_blocks[idx], block) }
     }
-    g.level_saved[idx] = true
+    g.room_saved[idx] = true
 }
 
-// -- Set new Level --
-set_new_level :: proc(g: ^Game, lv: int) {
-    level := lv
-    if level < 1 || level > LEVEL_COUNT { level = 1 }
-    idx := level - 1
+// -- Set new Room --
+set_new_room :: proc(g: ^Game, rm: int) {
+    room := rm
+    if room < 1 || room > ROOM_COUNT { room = 1 }
+    idx := room - 1
 
     // reset game blocks, Töm den nuvarande listan först
     resize(&g.blocks, 0)
-    g.target_speed = 300 // reset ball speed
-    g.current_level = level
+    g.target_speed = 300 // reset bollfart
+    g.current_room = room
 
-    if g.level_saved[idx] {
+    if g.room_saved[idx] {
         // Återvänd via portal: banan ska se exakt likadan ut som när vi lämnade
         for b in g.saved_blocks[idx] {
             append(&g.blocks, b)
         }
-    } else if level == 2 {
-        // Level 2 får nya slumpmässiga färger varje gång
-        for template in g.levels[1] {
+    } else if room == 2 {
+        // Rum 2 får nya slumpmässiga färger varje gång
+        for template in g.rooms[1] {
             b := template // Kopiera så template-färgerna inte ändras
             b.color = rl.Color{
                 u8(rl.GetRandomValue(0, 255)),
@@ -129,22 +129,22 @@ set_new_level :: proc(g: ^Game, lv: int) {
             append(&g.blocks, b)
         }
     } else {
-        // Level 1 och 3-9 kopieras direkt från sin mall
-        for b in g.levels[idx] {
+        // Rum 1 och 3-9 kopieras direkt från sin mall
+        for b in g.rooms[idx] {
             append(&g.blocks, b)
         }
     }
 
-    // Portaler finns från start på varje level
+    // Portaler finns från start i varje rum
     spawn_portals(g)
 }
 
 // -- Tvinga fram en färsk bana (bolltapp) --
-reset_level :: proc(g: ^Game, level: int) {
-    lv := level
-    if lv < 1 || lv > LEVEL_COUNT { lv = 1 }
-    g.level_saved[lv-1] = false
-    set_new_level(g, lv)
+reset_room :: proc(g: ^Game, room: int) {
+    rm := room
+    if rm < 1 || rm > ROOM_COUNT { rm = 1 }
+    g.room_saved[rm-1] = false
+    set_new_room(g, rm)
 }
 
 

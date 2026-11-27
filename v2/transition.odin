@@ -22,9 +22,9 @@ tube_travel_speed :: proc(dir: Tube_Direction) -> f32 {
 }
 
 
-// -- Starta animationen istället för att byta level direkt --
-start_transition :: proc(g: ^Game, next_level: int, dir: Tube_Direction) {
-    g.pending_level = next_level
+// -- Starta animationen istället för att byta rum direkt --
+start_transition :: proc(g: ^Game, next_room: int, dir: Tube_Direction) {
+    g.pending_room = next_room
     g.transition_timer = 0
     g.tube_center = {f32(SCREEN_WIDTH) / 2.0, f32(SCREEN_HEIGHT) / 2.0}
     g.transition_from = g.ball_pos
@@ -137,18 +137,18 @@ update_transition :: proc(g: ^Game, dt: f32) {
             g.camera.zoom = ANIM_ZOOM_MAX
 
             if g.transition_timer >= ANIM_TUBE_TIME {
-                // Byt level och reset bollen först när röret är klart
+                // Byt rum och reset bollen först när röret är klart
                 g.tube_exit_pos = g.ball_pos
                 g.state = .ZOOM_OUT
                 g.transition_timer = 0
                 save_current_blocks(g) // Behåll banan om vi senare återvänder hit
-                set_new_level(g, g.pending_level)
+                set_new_room(g, g.pending_room)
                 reset_ball(g)
                 g.camera.target = g.tube_exit_pos
             }
 
         case .ZOOM_OUT:
-            // Zooma ut från bollen medan den glider till startpunkten för nästa level
+            // Zooma ut från bollen medan den glider till startpunkten för nästa rum
             t := anim_smoothstep(g.transition_timer / ANIM_ZOOM_OUT_TIME)
             g.ball_pos.x = anim_lerp(g.tube_exit_pos.x, f32(SCREEN_WIDTH) / 2.0, t)
             g.ball_pos.y = anim_lerp(g.tube_exit_pos.y, f32(SCREEN_HEIGHT) / 2.0, t)
