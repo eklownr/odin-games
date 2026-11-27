@@ -70,7 +70,7 @@ main :: proc() {
 
         block := Block{
             pos    = {50.0 + f32(i) * 102.0, 50.0},
-            size   = {90.0, 30.0},
+            size   = BLOCK_SIZE,
             active = true,
             color  = rl.YELLOW,
         }
@@ -157,42 +157,44 @@ main :: proc() {
         }
     }
 
-    // Rum 7: tio block i en diamant (ruter) runt nyckeln.
-    // Mitten hålls tom så nyckeln i KEY_RECT inte täcks av något block.
+    // Rum 7: tio block i en diamant (ruter) runt nyckeln, nu med samma
+    // storlek som blocken i övriga rum. Mitten hålls tom så nyckeln i
+    // KEY_RECT inte täcks av något block.
     resize(&game.rooms[6], 0)
     diamond_positions := [10]rl.Vector2{
-        {384.0, 130.0},                                     // toppen
-        {349.0, 160.0}, {419.0, 160.0},                     // 2
-        {294.0, 190.0}, {354.0, 190.0}, {414.0, 190.0}, {474.0, 190.0}, // 4
-        {339.0, 220.0}, {429.0, 220.0},                     // 2 (nyckeln i mitten)
-        {384.0, 250.0},                                     // botten
+        {355.0, 60.0},                                      // toppen
+        {245.0, 110.0}, {465.0, 110.0},                     // 2
+        {135.0, 160.0}, {355.0, 160.0}, {575.0, 160.0},     // 3
+        {135.0, 270.0}, {355.0, 270.0}, {575.0, 270.0},     // 3 (nyckeln i mitten)
+        {355.0, 320.0},                                     // botten
     }
     for i in 0..<10 {
         block_color := rl.GOLD
         if i % 2 == 1 { block_color = rl.VIOLET }
         append(&game.rooms[6], Block{
             pos    = diamond_positions[i],
-            size   = {32.0, 16.0},
+            size   = BLOCK_SIZE,
             active = true,
             color  = block_color,
         })
     }
 
     // Rum 9: kistan omges av en öppen blockram (glapp nedåt mot bollen).
-    // Inget block täcker BOX_RECT eller nyckelhålet.
+    // Blocken har samma storlek som i övriga rum och inget täcker
+    // BOX_RECT eller nyckelhålet.
     resize(&game.rooms[8], 0)
     chest_ring := [11]rl.Vector2{
-        {340.0, 80.0},  {384.0, 80.0},  {428.0, 80.0},
-        {300.0, 110.0}, {300.0, 145.0}, {300.0, 180.0},
-        {468.0, 110.0}, {468.0, 145.0}, {468.0, 180.0},
-        {340.0, 225.0}, {428.0, 225.0},
+        {250.0, 50.0},  {355.0, 50.0},  {460.0, 50.0},
+        {200.0, 100.0}, {200.0, 150.0}, {200.0, 200.0},
+        {510.0, 100.0}, {510.0, 150.0}, {510.0, 200.0},
+        {250.0, 250.0}, {460.0, 250.0},
     }
     for i in 0..<11 {
         block_color := rl.GOLD
         if i % 2 == 1 { block_color = rl.VIOLET }
         append(&game.rooms[8], Block{
             pos    = chest_ring[i],
-            size   = {32.0, 16.0},
+            size   = BLOCK_SIZE,
             active = true,
             color  = block_color,
         })

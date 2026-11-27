@@ -9,6 +9,7 @@ SCREEN_HEIGHT :: 600
 BALL_RADIUS   :: 10.0
 PADDLE_WIDTH  :: 100.0
 PADDLE_HEIGHT :: 20.0
+BLOCK_SIZE    :: rl.Vector2{90.0, 30.0} // Standardstorlek för alla block
 
 ROOM_COUNT :: 9                  // Antal rum (1-9)
 
