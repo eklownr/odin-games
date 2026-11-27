@@ -3,27 +3,51 @@ package main
 import rl "vendor:raylib"
 
 
-// -- Portaler: tunna vita block i taket eller på sidoväggen --
+// -- Portaler: mörka block med pulserande streck i tak/vägg --
 clear_portals :: proc(g: ^Game) {
     resize(&g.portals, 0)
 }
 
-add_portal :: proc(g: ^Game, dir: Tube_Direction, target: int) {
+portal_scale_for :: proc(g: ^Game) -> f32 {
+    if len(g.blocks) == 0 { return PORTAL_CLEAR_SCALE }
+    return 1.0
+}
+
+portal_rect :: proc(dir: Tube_Direction, scale: f32) -> rl.Rectangle {
     cx := f32(SCREEN_WIDTH) / 2.0
     cy := f32(SCREEN_HEIGHT) / 2.0
-    thick: f32 = 14.0
-    length: f32 = 40.0
+    thick: f32 = 4.0 * PORTAL_TEST_SCALE * scale
+    length: f32 = PORTAL_STREAK_HEIGHT * scale
 
-    p := Portal{target_level = target, dir = dir}
+    r := rl.Rectangle{}
     switch dir {
         case .UP:
-            p.rect = {cx - length/2.0, 0, length, thick}
+            r = {cx - length/2.0, 0, length, thick}
         case .RIGHT:
-            p.rect = {f32(SCREEN_WIDTH) - thick, cy - length/2.0, thick, length}
+            r = {f32(SCREEN_WIDTH) - thick, cy - length/2.0, thick, length}
         case .LEFT:
-            p.rect = {0, cy - length/2.0, thick, length}
+            r = {0, cy - length/2.0, thick, length}
     }
-    append(&g.portals, p)
+    return r
+}
+
+add_portal :: proc(g: ^Game, dir: Tube_Direction, target: int) {
+    scale := portal_scale_for(g)
+    append(&g.portals, Portal{
+        rect         = portal_rect(dir, scale),
+        target_level = target,
+        dir          = dir,
+        scale        = scale,
+    })
+}
+
+// Uppdatera både hittbox och streckstorlek när blocken tar slut
+update_portal_scale :: proc(g: ^Game) {
+    scale := portal_scale_for(g)
+    for &portal in g.portals {
+        portal.scale = scale
+        portal.rect = portal_rect(portal.dir, scale)
+    }
 }
 
 spawn_portals :: proc(g: ^Game) {

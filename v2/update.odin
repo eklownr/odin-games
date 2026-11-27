@@ -11,6 +11,9 @@ update_game :: proc(g: ^Game, dt: f32) {
     update_transition(g, dt)
     if g.state != .PLAY { return }
 
+    // Portaler växer direkt när alla block är borta (även hittboxen)
+    update_portal_scale(g)
+
     // Paddel-rörelse
     if rl.IsKeyDown(.LEFT)  { g.paddle_x -= g.paddle_speed * dt }
     if rl.IsKeyDown(.RIGHT) { g.paddle_x += g.paddle_speed * dt }
@@ -150,5 +153,6 @@ update_game :: proc(g: ^Game, dt: f32) {
     delete(g.blocks)
     g.blocks = new_blocks
 
-    // Att sista blocket försvinner gör ingenting – bara portalerna byter level
+    // Att sista blocket försvinner byter inte level – portalerna växer bara
+    update_portal_scale(g)
 }

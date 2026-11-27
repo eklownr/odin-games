@@ -28,6 +28,17 @@ BLIP_COOLDOWN   :: 0.05        // Minsta tid (s) mellan block-ljud
 
 TEST_SINGLE_BLOCK  :: true     // TILLFÄLLIGT: ett enda block i mitten för test
 TEST_ADVANCE_ON_HIT :: false   // TILLFÄLLIGT: byt level vid första blockträff (används ej)
+PORTAL_TEST_SCALE  :: 1.0      // TILLFÄLLIGT: större portaler under test
+
+// Portal-animation: fyra tunna streck som pulserar inåt
+PORTAL_PULSE_PERIOD :: 0.2      // Sekunder per färgsteg/puls
+PORTAL_STREAK_COUNT :: 4
+PORTAL_STREAK_WIDTH  :: 6.0   // Tjocklek på strecket
+PORTAL_STREAK_HEIGHT :: 100.0  // Längd på strecket längs portalen
+PORTAL_STREAK_INWARD :: 0.10   // Hur långt inåt mot spelplanen strecken glider per puls
+PORTAL_CLEAR_SCALE   :: 2.0     // Portaler blir dubbelt så stora när alla block är borta
+PORTAL_BASE_COLOR   := rl.Color{70, 72, 85, 55} // Mörkgrå bas, lite transpatant
+PORTAL_PULSE_COLORS := [4]rl.Color{rl.RED, rl.WHITE, rl.YELLOW, rl.BLUE}
 
 // Ljusa pastellbakgrunder per level
 BG_LEVEL_1 :: rl.Color{135, 206, 235, 255} // ljus skyblue
@@ -68,6 +79,7 @@ Portal :: struct {
     rect:         rl.Rectangle,
     target_level: int,
     dir:          Tube_Direction,
+    scale:        f32, // 1.0 = normal, PORTAL_CLEAR_SCALE när blocken är slut
 }
 
 Game :: struct {

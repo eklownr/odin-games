@@ -26,7 +26,58 @@ tube_alpha :: proc(g: ^Game) -> f32 {
 }
 
 
-/////////////////////////////////////////////
+// -- Portal: mörk bas + långa tunna streck som glider in mot spelplanen --
+draw_portal :: proc(portal: Portal) {
+    rl.DrawRectangleRounded(portal.rect, 0.2, 0, PORTAL_BASE_COLOR)
+
+    t := f32(rl.GetTime()) / PORTAL_PULSE_PERIOD
+    step := int(t)
+    phase := t - f32(step)
+    pulse := anim_smoothstep(phase) // 0 -> 1 under varje puls
+
+    streak_width  := PORTAL_STREAK_WIDTH * portal.scale
+    streak_height := PORTAL_STREAK_HEIGHT * portal.scale
+    edge_margin: f32 = streak_width / 2.0 + 2.0
+
+    for i in 0..<PORTAL_STREAK_COUNT {
+        // 0 = ytterst mot väggen, 1 = innerst mot spelplanen
+        slot := (f32(i) + 0.5) / f32(PORTAL_STREAK_COUNT) + pulse * PORTAL_STREAK_INWARD
+        color := PORTAL_PULSE_COLORS[(step + i) % PORTAL_STREAK_COUNT]
+
+        if portal.dir == .UP {
+            // Tak: långa horisontella streck som rör sig nedåt
+            y := portal.rect.y + edge_margin + slot * (portal.rect.height - 2.0 * edge_margin)
+            long_offset := (portal.rect.width - streak_height) / 2.0
+            streak := rl.Rectangle{
+                portal.rect.x + long_offset,
+                y - streak_width / 2.0,
+                streak_height,
+                streak_width,
+            }
+            rl.DrawRectangleRec(streak, color)
+        } else {
+            // Vägg: långa vertikala streck som rör sig in från väggen
+            span := portal.rect.width - 2.0 * edge_margin
+            x := f32(0)
+            if portal.dir == .LEFT {
+                x = portal.rect.x + edge_margin + slot * span
+            } else {
+                x = portal.rect.x + portal.rect.width - edge_margin - slot * span
+            }
+            long_offset := (portal.rect.height - streak_height) / 2.0
+            streak := rl.Rectangle{
+                x - streak_width / 2.0,
+                portal.rect.y + long_offset,
+                streak_width,
+                streak_height,
+            }
+            rl.DrawRectangleRec(streak, color)
+        }
+    }
+}
+
+
+///////////////////////////////////////////
 // -- Ritlogik (Grafik) --
 draw_game :: proc(g: ^Game) {
     rl.BeginDrawing()
@@ -77,9 +128,9 @@ draw_game :: proc(g: ^Game) {
         }
     }
 
-    // -- Portaler: enkla vita smala block i tak/vägg --
+    // -- Portaler: mörk bas med pulserande färgstreck --
     for portal in g.portals {
-        rl.DrawRectangleRounded(portal.rect, 0.2, 0, rl.WHITE)
+        draw_portal(portal)
     }
 
     // -- Rita Paddel --
