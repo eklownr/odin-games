@@ -26,7 +26,23 @@ main :: proc() {
         blip_mid    = rl.LoadSound("blip.wav"),
         blip_high   = rl.LoadSound("blip.wav"),
         blip_high2  = rl.LoadSound("blip.wav"),
-        current_level = 1,
+        current_level = 2, // Start i mitten av bottenraden
+
+        state            = .PLAY,
+        transition_timer = 0,
+        pending_level    = 1,
+        tube_center      = {f32(SCREEN_WIDTH) / 2.0, f32(SCREEN_HEIGHT) / 2.0},
+        transition_from  = {f32(SCREEN_WIDTH) / 2.0, f32(SCREEN_HEIGHT) / 2.0},
+        tube_start       = {f32(SCREEN_WIDTH) / 2.0, f32(SCREEN_HEIGHT) / 2.0},
+        tube_exit_pos    = {f32(SCREEN_WIDTH) / 2.0, f32(SCREEN_HEIGHT) / 2.0},
+        tube_dir         = .UP,
+        tube_flash       = 0,
+        camera = rl.Camera2D{
+            offset   = {f32(SCREEN_WIDTH) / 2.0, f32(SCREEN_HEIGHT) / 2.0},
+            target   = {f32(SCREEN_WIDTH) / 2.0, f32(SCREEN_HEIGHT) / 2.0},
+            rotation = 0,
+            zoom     = 1,
+        },
     }
 
     defer rl.UnloadSound(game.blip_low)
@@ -148,8 +164,8 @@ main :: proc() {
         }
     }
 
-    // Starta på level 1
-    for b in game.levels[0] {
+    // Starta på level 2
+    for b in game.levels[1] {
         append(&game.blocks, b)
     }
 
@@ -168,6 +184,9 @@ main :: proc() {
         resize(&game.blocks, 0)
         append(&game.blocks, center_block)
     }
+
+    // Portaler är alltid öppna – de är enda sättet att byta level
+    spawn_portals(&game)
 
 
     // Sett flagga: avsluta game loop

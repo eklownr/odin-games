@@ -7,6 +7,10 @@ import "core:math"
 /////////////////////////////////////////////
 // --- Uppdateringslogik (Input & Fysik) ---
 update_game :: proc(g: ^Game, dt: f32) {
+    // Level-animationen kör självständigt: frys vanligt spel under tiden
+    update_transition(g, dt)
+    if g.state != .PLAY { return }
+
     // Paddel-rörelse
     if rl.IsKeyDown(.LEFT)  { g.paddle_x -= g.paddle_speed * dt }
     if rl.IsKeyDown(.RIGHT) { g.paddle_x += g.paddle_speed * dt }
@@ -20,6 +24,16 @@ update_game :: proc(g: ^Game, dt: f32) {
     // Uppdatera bollens position med X och Y hastighet
     g.ball_pos.x += g.ball_speed_x * dt
     g.ball_pos.y += g.ball_speed_y * dt
+
+    // -- Portaler: enda sättet att byta level --
+    // Kontrolleras före vägg-/takkollision så bollen hinner nå portalen
+    for portal in g.portals {
+        if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, portal.rect) {
+            rl.PlaySound(g.blip_high)
+            start_transition(g, portal.target_level, portal.dir)
+            return
+        }
+    }
 
     /////////////////////////////////////////
     // -- Kollision med Paddel --
@@ -88,20 +102,16 @@ update_game :: proc(g: ^Game, dt: f32) {
         g.ball_speed_y = 300.0  
     }
 
-    // -- Reset vid golvet --
+    // -- Reset vid golvet: börja om samma level --
     if g.ball_pos.y - BALL_RADIUS > f32(SCREEN_HEIGHT) {
         rl.PlaySound(g.blip_high2)
-        // Restart level 1
-        set_new_level(g, 1)
+        set_new_level(g, g.current_level)
         reset_ball(g)
-        g.score = 0
-        g.target_speed = 300
     }
     
 
     //////////////////////////
     // -- Gå igenom alla block --
-    hit_this_frame := false
     for &block in g.blocks {
         if !block.active { continue } // Hoppa över förstörda block
     
@@ -115,7 +125,6 @@ update_game :: proc(g: ^Game, dt: f32) {
         
         // kollision boll och block
         if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, block_rect) {
-            hit_this_frame = true
             block.active = false // Markera som förstörd
             g.score += 1 // öka scor med ett vid kollision
             random_blip(g) // random blip-ljud
@@ -141,12 +150,5 @@ update_game :: proc(g: ^Game, dt: f32) {
     delete(g.blocks)
     g.blocks = new_blocks
 
-    // -- Ny level --
-    // Test: byt level direkt vid första träff, annars när alla block är borta
-    if len(g.blocks) == 0 || (TEST_ADVANCE_ON_HIT && hit_this_frame) {
-        next_level := g.current_level + 1
-        if next_level > LEVEL_COUNT { next_level = 1 }
-        set_new_level(g, next_level)
-        reset_ball(g)
-    }
+    // Att sista blocket försvinner gör ingenting – bara portalerna byter level
 }
