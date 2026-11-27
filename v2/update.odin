@@ -11,6 +11,14 @@ update_game :: proc(g: ^Game, dt: f32) {
     update_transition(g, dt)
     if g.state != .PLAY { return }
 
+    // Efter segern fryses allt (Q fungerar fortfarande i main-loopen)
+    if g.won { return }
+
+    if g.missing_key_timer > 0 {
+        g.missing_key_timer -= dt
+        if g.missing_key_timer < 0 { g.missing_key_timer = 0 }
+    }
+
     // Portaler växer direkt när alla block är borta (även hittboxen)
     update_portal_scale(g)
 
@@ -35,6 +43,40 @@ update_game :: proc(g: ^Game, dt: f32) {
             rl.PlaySound(g.blip_high)
             start_transition(g, portal.target_level, portal.dir)
             return
+        }
+    }
+
+    // -- Nyckeln i level 7: plockas när bollen träffar den --
+    if g.current_level == 7 && !g.has_key {
+        if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, KEY_RECT) {
+            g.has_key = true
+            g.score += 5
+            rl.PlaySound(g.blip_high2)
+        }
+    }
+
+    // -- Lådan i level 9 --
+    if g.current_level == 9 && !g.box_unlocked {
+        if rl.CheckCollisionCircleRec(g.ball_pos, BALL_RADIUS, BOX_RECT) {
+            if g.has_key {
+                // Upplåst: visa Grattis-texten och frys spelet
+                g.box_unlocked = true
+                g.won = true
+                g.ball_speed_x = 0
+                g.ball_speed_y = 0
+                rl.PlaySound(g.blip_high2)
+                return
+            }
+
+            // Ingen nyckel: kort meddelande och studsa ut bollen ur lådan
+            g.missing_key_timer = MISSING_KEY_TIME
+            rl.PlaySound(g.blip_low)
+            if g.ball_speed_y > 0 {
+                g.ball_pos.y = BOX_RECT.y - BALL_RADIUS
+            } else {
+                g.ball_pos.y = BOX_RECT.y + BOX_RECT.height + BALL_RADIUS
+            }
+            g.ball_speed_y *= -1.0
         }
     }
 
@@ -108,6 +150,7 @@ update_game :: proc(g: ^Game, dt: f32) {
     // -- Reset vid golvet: börja om samma level --
     if g.ball_pos.y - BALL_RADIUS > f32(SCREEN_HEIGHT) {
         rl.PlaySound(g.blip_high2)
+        g.has_key = false // Nyckeln måste hämtas igen i level 7
         set_new_level(g, g.current_level)
         reset_ball(g)
     }

@@ -94,6 +94,37 @@ draw_portal :: proc(portal: Portal) {
 }
 
 
+// -- Nyckeln i level 7: gul nyckel med hål, skaft och tänder --
+draw_key :: proc(g: ^Game) {
+    if g.current_level != 7 || g.has_key { return }
+
+    x := KEY_RECT.x
+    y := KEY_RECT.y
+    rl.DrawRectangleRec(rl.Rectangle{x + 32.0, y + 12.0, 5.0, 9.0}, KEY_COLOR)
+    rl.DrawRectangleRec(rl.Rectangle{x + 40.0, y + 12.0, 5.0, 9.0}, KEY_COLOR)
+    rl.DrawRectangleRec(rl.Rectangle{x + 14.0, y + 6.0, 34.0, 8.0}, KEY_COLOR)
+    rl.DrawCircleV(rl.Vector2{x + 10.0, y + 10.0}, 10.0, KEY_COLOR)
+    rl.DrawCircleV(rl.Vector2{x + 10.0, y + 10.0}, 4.0, level_bg(g.current_level))
+}
+
+// -- Lådan i level 9: brun låda med stort nyckelhål --
+draw_box :: proc(g: ^Game) {
+    if g.current_level != 9 { return }
+
+    r := BOX_RECT
+    rl.DrawRectangleRounded(r, 0.12, 0, BOX_BORDER)
+    inner := rl.Rectangle{r.x + 4.0, r.y + 4.0, r.width - 8.0, r.height - 8.0}
+    rl.DrawRectangleRounded(inner, 0.12, 0, BOX_COLOR)
+
+    hole_color := rl.BLACK
+    if g.box_unlocked { hole_color = KEY_COLOR }
+    cx := r.x + r.width / 2.0
+    cy := r.y + r.height / 2.0 - 8.0
+    rl.DrawCircleV(rl.Vector2{cx, cy}, 14.0, hole_color)
+    rl.DrawRectangleRec(rl.Rectangle{cx - 6.0, cy, 12.0, 30.0}, hole_color)
+}
+
+
 ///////////////////////////////////////////
 // -- Ritlogik (Grafik) --
 draw_game :: proc(g: ^Game) {
@@ -150,6 +181,10 @@ draw_game :: proc(g: ^Game) {
         draw_portal(portal)
     }
 
+    // -- Nyckel (level 7) och låda (level 9) --
+    draw_key(g)
+    draw_box(g)
+
     // -- Rita Paddel --
     rect_pad := rl.Rectangle{g.paddle_x, g.paddle_y, PADDLE_WIDTH, PADDLE_HEIGHT}
     rl.DrawRectangleRounded(rect_pad, 0.6, 0, rl.BLACK)
@@ -180,11 +215,18 @@ draw_game :: proc(g: ^Game) {
     if g.state != .PLAY { hud_color = rl.WHITE }
     rl.DrawText(score_text, 10, 10, 24, hud_color)
 
-    // Sista leveln: enkelt "Klart!"
-    if g.current_level == LEVEL_COUNT && g.state == .PLAY {
-        msg: cstring = "Klart!"
-        tw := rl.MeasureText(msg, 40)
-        rl.DrawText(msg, i32(SCREEN_WIDTH)/2 - tw/2, i32(SCREEN_HEIGHT)/2 - 20, 40, rl.DARKGRAY)
+    // Segertext / påminnelse om nyckeln (utanför kameran)
+    if g.won {
+        msg1: cstring = "Grattis!"
+        msg2: cstring = "Du klarade spelet."
+        w1 := rl.MeasureText(msg1, 40)
+        w2 := rl.MeasureText(msg2, 30)
+        rl.DrawText(msg1, i32(SCREEN_WIDTH)/2 - w1/2, 240, 40, rl.DARKGRAY)
+        rl.DrawText(msg2, i32(SCREEN_WIDTH)/2 - w2/2, 300, 30, rl.DARKGRAY)
+    } else if g.missing_key_timer > 0 {
+        msg: cstring = "Nyckel saknas"
+        w := rl.MeasureText(msg, 24)
+        rl.DrawText(msg, i32(SCREEN_WIDTH)/2 - w/2, 240, 24, rl.DARKGRAY)
     }
     rl.EndDrawing()
 }

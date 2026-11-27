@@ -43,6 +43,10 @@ main :: proc() {
             rotation = 0,
             zoom     = 1,
         },
+        has_key           = false,
+        box_unlocked      = false,
+        won               = false,
+        missing_key_timer = 0,
     }
 
     defer rl.UnloadSound(game.blip_low)
@@ -164,6 +168,27 @@ main :: proc() {
         }
     }
 
+    // Level 7: tio block i en diamant (ruter) runt nyckeln.
+    // Mitten hålls tom så nyckeln i KEY_RECT inte täcks av något block.
+    resize(&game.levels[6], 0)
+    diamond_positions := [10]rl.Vector2{
+        {384.0, 130.0},                                     // toppen
+        {349.0, 160.0}, {419.0, 160.0},                     // 2
+        {294.0, 190.0}, {354.0, 190.0}, {414.0, 190.0}, {474.0, 190.0}, // 4
+        {339.0, 220.0}, {429.0, 220.0},                     // 2 (nyckeln i mitten)
+        {384.0, 250.0},                                     // botten
+    }
+    for i in 0..<10 {
+        block_color := rl.GOLD
+        if i % 2 == 1 { block_color = rl.VIOLET }
+        append(&game.levels[6], Block{
+            pos    = diamond_positions[i],
+            size   = {32.0, 16.0},
+            active = true,
+            color  = block_color,
+        })
+    }
+
     // Starta på level 2
     for b in game.levels[1] {
         append(&game.blocks, b)
@@ -178,7 +203,11 @@ main :: proc() {
             color  = rl.YELLOW,
         }
         for i in 0..<LEVEL_COUNT {
+            // Level 7 behåller diamanten runt nyckeln
+            if i == 6 { continue }
             resize(&game.levels[i], 0)
+            // Level 9 är blockfri – där finns bara lådan
+            if i == 8 { continue }
             append(&game.levels[i], center_block)
         }
         resize(&game.blocks, 0)

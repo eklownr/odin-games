@@ -26,6 +26,14 @@ ANIM_BG_DARK         :: rl.Color{28, 30, 42, 255}
 BLIP_POOL_COUNT :: 5           // Antal samtidiga block-ljud
 BLIP_COOLDOWN   :: 0.05        // Minsta tid (s) mellan block-ljud
 
+// --- Nyckel & låda (level 7 respektive level 9) ---
+MISSING_KEY_TIME :: 1.5        // Sekunder som "Nyckel saknas" visas
+KEY_RECT  :: rl.Rectangle{375.0, 220.0, 50.0, 20.0}
+BOX_RECT  :: rl.Rectangle{350.0, 120.0, 100.0, 90.0}
+KEY_COLOR      := rl.Color{255, 203, 50, 255}
+BOX_COLOR      := rl.Color{150, 90, 45, 255}
+BOX_BORDER     := rl.Color{90, 50, 25, 255}
+
 TEST_SINGLE_BLOCK  :: true     // TILLFÄLLIGT: ett enda block i mitten för test
 TEST_ADVANCE_ON_HIT :: false   // TILLFÄLLIGT: byt level vid första blockträff (används ej)
 PORTAL_TEST_SCALE  :: 1.0      // TILLFÄLLIGT: större portaler under test
@@ -120,4 +128,10 @@ Game :: struct {
     tube_dir:         Tube_Direction,
     tube_flash:       f32,
     camera:           rl.Camera2D,
+
+    // Nyckel/låda och seger
+    has_key:          bool,   // Nyckeln hämtad i level 7 (tappas vid bolltapp)
+    box_unlocked:     bool,   // Lådan i level 9 öppnad
+    won:              bool,   // Spelet fryst efter segern
+    missing_key_timer: f32,   // Återstående tid för "Nyckel saknas"
 }

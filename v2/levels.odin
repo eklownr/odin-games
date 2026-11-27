@@ -80,7 +80,8 @@ spawn_portals :: proc(g: ^Game) {
             add_portal(g, .LEFT, 7)
             add_portal(g, .RIGHT, 9)
         case 9:
-            // Sista leveln: inga portaler, bara "Klart!"
+            // Väg tillbaka: 9 -> 8 -> 7 (där nyckeln finns)
+            add_portal(g, .LEFT, 8)
     }
 }
 
