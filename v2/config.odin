@@ -149,4 +149,8 @@ Game :: struct {
     box_unlocked:     bool,   // Lådan i level 9 öppnad
     won:              bool,   // Spelet fryst efter segern
     missing_key_timer: f32,   // Återstående tid för "Nyckel saknas"
+
+    // Sparad bana per level: portalresor behåller blocken, bolltapp nollställer
+    saved_blocks: [LEVEL_COUNT][dynamic]Block,
+    level_saved:  [LEVEL_COUNT]bool,
 }

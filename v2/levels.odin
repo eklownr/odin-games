@@ -87,18 +87,37 @@ spawn_portals :: proc(g: ^Game) {
 
 
 ////////////////////////////////////////
+// -- Spara banan när vi lämnar en level via portal --
+save_current_blocks :: proc(g: ^Game) {
+    level := g.current_level
+    if level < 1 || level > LEVEL_COUNT { return }
+
+    idx := level - 1
+    resize(&g.saved_blocks[idx], 0)
+    for block in g.blocks {
+        if block.active { append(&g.saved_blocks[idx], block) }
+    }
+    g.level_saved[idx] = true
+}
+
 // -- Set new Level --
 set_new_level :: proc(g: ^Game, lv: int) {
     level := lv
     if level < 1 || level > LEVEL_COUNT { level = 1 }
+    idx := level - 1
 
     // reset game blocks, Töm den nuvarande listan först
     resize(&g.blocks, 0)
     g.target_speed = 300 // reset ball speed
     g.current_level = level
 
-    // Level 2 får nya slumpmässiga färger varje gång
-    if level == 2 {
+    if g.level_saved[idx] {
+        // Återvänd via portal: banan ska se exakt likadan ut som när vi lämnade
+        for b in g.saved_blocks[idx] {
+            append(&g.blocks, b)
+        }
+    } else if level == 2 {
+        // Level 2 får nya slumpmässiga färger varje gång
         for template in g.levels[1] {
             b := template // Kopiera så template-färgerna inte ändras
             b.color = rl.Color{
@@ -111,13 +130,21 @@ set_new_level :: proc(g: ^Game, lv: int) {
         }
     } else {
         // Level 1 och 3-9 kopieras direkt från sin mall
-        for b in g.levels[level-1] {
+        for b in g.levels[idx] {
             append(&g.blocks, b)
         }
     }
 
     // Portaler finns från start på varje level
     spawn_portals(g)
+}
+
+// -- Tvinga fram en färsk bana (bolltapp) --
+reset_level :: proc(g: ^Game, level: int) {
+    lv := level
+    if lv < 1 || lv > LEVEL_COUNT { lv = 1 }
+    g.level_saved[lv-1] = false
+    set_new_level(g, lv)
 }
 
 

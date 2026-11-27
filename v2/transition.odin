@@ -141,6 +141,7 @@ update_transition :: proc(g: ^Game, dt: f32) {
                 g.tube_exit_pos = g.ball_pos
                 g.state = .ZOOM_OUT
                 g.transition_timer = 0
+                save_current_blocks(g) // Behåll banan om vi senare återvänder hit
                 set_new_level(g, g.pending_level)
                 reset_ball(g)
                 g.camera.target = g.tube_exit_pos

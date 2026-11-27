@@ -151,7 +151,7 @@ update_game :: proc(g: ^Game, dt: f32) {
     if g.ball_pos.y - BALL_RADIUS > f32(SCREEN_HEIGHT) {
         rl.PlaySound(g.blip_high2)
         g.has_key = false // Nyckeln måste hämtas igen i level 7
-        set_new_level(g, g.current_level)
+        reset_level(g, g.current_level) // Bolltapp nollställer blocken som tidigare
         reset_ball(g)
     }
     
